@@ -984,19 +984,19 @@ export const users = [
   {
     id: 'user-001',
     name: 'Admin User',
-    email: 'admin@lifepro.com',
+    email: 'admin@solvrays.com',
     role: 'admin'
   },
   {
     id: 'user-002',
     name: 'Agent Smith',
-    email: 'agent@lifepro.com',
+    email: 'agent@solvrays.com',
     role: 'agent'
   },
   {
     id: 'user-003',
     name: 'Viewer User',
-    email: 'viewer@lifepro.com',
+    email: 'viewer@solvrays.com',
     role: 'viewer'
   }
 ];
