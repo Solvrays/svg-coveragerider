@@ -3,19 +3,18 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function Home() {
+export default function NewBeneficiary() {
   const router = useRouter();
-
+  
+  // Redirect to the edit page with 'new' ID
   useEffect(() => {
-    // Redirect to dashboard
-    router.push('/dashboard');
+    router.push('/beneficiaries/new/edit');
   }, [router]);
-
+  
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <div className="text-center">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-4">LifePro Policy Admin</h1>
-        <p className="text-gray-600 mb-8">Loading dashboard...</p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-4">Redirecting to beneficiary form...</h1>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
       </div>
     </div>

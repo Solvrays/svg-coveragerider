@@ -1,0 +1,405 @@
+/* Retro Theme for Coverage Rider Policy Admin */
+
+:root {
+  /* Color Palette */
+  --retro-primary: #219811;      /* Vibrant orange */
+  --retro-secondary: #2ec4b6;    /* Teal */
+  --retro-accent: #f9c80e;       /* Yellow */
+  --retro-dark: #011627;         /* Dark blue/black */
+  --retro-light: #9ae475;        /* Off-white */
+  --retro-danger: #e71d36;       /* Red */
+  --retro-success: #3cb44b;      /* Green */
+  --retro-warning: #f9c80e;      /* Yellow */
+  --retro-info: #6aefdb;         /* Blue */
+  
+  /* Gradients */
+  --retro-gradient-primary: linear-gradient(135deg, var(--retro-primary), #ff9e64);
+  --retro-gradient-sidebar: linear-gradient(180deg, #2b3595, #4361ee);
+  
+  /* Typography */
+  --retro-font-heading: 'Space Mono', monospace;
+  --retro-font-body: 'DM Sans', sans-serif;
+  
+  /* Shadows */
+  --retro-shadow-sm: 2px 2px 0px rgba(0, 0, 0, 0.2);
+  --retro-shadow-md: 4px 4px 0px rgba(0, 0, 0, 0.2);
+  --retro-shadow-lg: 6px 6px 0px rgba(0, 0, 0, 0.2);
+  
+  /* Borders */
+  --retro-border-radius: 0px;
+  --retro-border-width: 2px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--retro-font-heading);
+  letter-spacing: -0.025em;
+  color: var(--retro-light) !important;
+}
+
+body {
+  font-family: var(--retro-font-body);
+  background-color: #f0f0f0 !important;
+  background-image: 
+    linear-gradient(rgba(240, 240, 240, 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 240, 240, 0.8) 1px, transparent 1px),
+    linear-gradient(rgba(240, 240, 240, 0.9) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 240, 240, 0.9) 1px, transparent 1px) !important;
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px !important;
+  background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px !important;
+}
+
+/* Retro Text Effects */
+.retro-text-shadow {
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Pixel art image rendering */
+.pixel-art {
+  -ms-interpolation-mode: nearest-neighbor;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+img.pixel-art,
+.pixel-art img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+/* Buttons */
+.btn-retro, 
+.btn-retro-primary,
+button[type="submit"],
+.inline-flex.justify-center {
+  border: var(--retro-border-width) solid var(--retro-dark) !important;
+  border-radius: var(--retro-border-radius) !important;
+  box-shadow: var(--retro-shadow-sm) !important;
+  font-weight: 600 !important;
+  position: relative !important;
+  transform: translate(-2px, -2px) !important;
+  transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out !important;
+}
+
+.btn-retro:hover, 
+.btn-retro-primary:hover,
+button[type="submit"]:hover,
+.inline-flex.justify-center:hover {
+  transform: translate(0, 0) !important;
+  box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-retro-primary,
+button[type="submit"],
+.inline-flex.justify-center {
+  background-color: var(--retro-primary) !important;
+  color: var(--retro-light) !important;
+}
+
+/* Cards */
+.bg-white.shadow,
+.bg-white.shadow-sm {
+  border: var(--retro-border-width) solid var(--retro-dark) !important;
+  border-radius: var(--retro-border-radius) !important;
+  box-shadow: var(--retro-shadow-md) !important;
+}
+
+/* Form Elements */
+input, select, textarea {
+  border: var(--retro-border-width) solid var(--retro-dark) !important;
+  border-radius: var(--retro-border-radius) !important;
+  box-shadow: var(--retro-shadow-sm) !important;
+  background-color: #d8d8d8 !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  font-family: var(--retro-font-body) !important;
+  font-size: 1rem !important;
+}
+
+input::placeholder, select::placeholder, textarea::placeholder {
+  color: #666 !important;
+  opacity: 1 !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--retro-primary) !important;
+  box-shadow: var(--retro-shadow-sm) !important;
+  background-color: #bdb5b5 !important;
+}
+
+/* Form Labels */
+label {
+  font-family: var(--retro-font-heading) !important;
+  font-weight: 600 !important;
+  color: var(--retro-dark) !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+  font-size: 0.9rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Form Title */
+h3.text-lg.leading-6.font-medium {
+  font-family: var(--retro-font-heading) !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--retro-primary) !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* Form Subtitle */
+p.mt-1.max-w-2xl.text-sm {
+  font-family: var(--retro-font-body) !important;
+  color: var(--retro-dark) !important;
+  margin-bottom: 16px !important;
+  font-size: 0.9rem !important;
+}
+
+/* Form Groups */
+.form-group, 
+.mt-1, 
+.sm\:col-span-3, 
+.sm\:col-span-6 {
+  margin-bottom: 16px !important;
+}
+
+/* Form Sections */
+h4.text-sm.font-medium {
+  border-bottom: 2px solid var(--retro-dark) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 16px !important;
+  font-family: var(--retro-font-heading) !important;
+  font-size: 1.1rem !important;
+  color: var(--retro-dark) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* Form Container */
+.border-t.border-gray-200 {
+  background-color: #f0f0f0 !important;
+  border: 2px solid var(--retro-dark) !important;
+  padding: 20px !important;
+}
+
+/* Date Inputs */
+input[type="date"] {
+  font-family: var(--retro-font-body) !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Number Inputs */
+input[type="number"] {
+  font-family: var(--retro-font-heading) !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Form Buttons */
+button[type="submit"], 
+.inline-flex.justify-center {
+  background-color: var(--retro-primary) !important;
+  color: rgb(218, 209, 209) !important;
+  font-family: var(--retro-font-heading) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 10px 20px !important;
+  font-size: 0.9rem !important;
+}
+
+/* Cancel Button */
+a.mr-3.py-2.px-4 {
+  background-color: #f0f0f0 !important;
+  color: var(--retro-dark) !important;
+  font-family: var(--retro-font-heading) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  border: 2px solid var(--retro-dark) !important;
+  padding: 8px 16px !important;
+  font-size: 0.9rem !important;
+}
+
+/* Sidebar */
+.bg-indigo-700 {
+  background: var(--retro-gradient-sidebar) !important;
+}
+
+.text-indigo-100,
+.text-indigo-200,
+.text-indigo-300 {
+  color: var(--retro-light) !important;
+}
+
+.bg-indigo-800 {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.hover\:bg-indigo-600:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Tables */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: var(--retro-border-width) solid var(--retro-dark) !important;
+}
+
+th, td {
+  border: 1px solid var(--retro-dark) !important;
+}
+
+th {
+  background-color: var(--retro-accent) !important;
+  color: var(--retro-dark) !important;
+}
+
+/* Badges */
+.rounded-full {
+  border-radius: var(--retro-border-radius) !important;
+  border: 1px solid var(--retro-dark) !important;
+}
+
+/* Tabs */
+.border-b-2 {
+  border-width: var(--retro-border-width) !important;
+}
+
+/* Utilities */
+.rounded-md, .rounded-lg {
+  border-radius: var(--retro-border-radius) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--retro-light);
+  border-left: 1px solid var(--retro-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--retro-primary);
+  border: 1px solid var(--retro-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--retro-secondary);
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  border: var(--retro-border-width) solid var(--retro-dark) !important;
+  box-shadow: var(--retro-shadow-md) !important;
+  transition: transform 0.2s ease-in-out !important;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px) !important;
+}
+
+/* Retro Dividers */
+.retro-divider {
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 5px,
+    var(--retro-dark) 5px,
+    var(--retro-dark) 10px
+  );
+}
+
+/* Retro Loader */
+.retro-loader {
+  width: 48px;
+  height: 48px;
+  border: 5px solid var(--retro-dark);
+  border-bottom-color: var(--retro-primary);
+  border-radius: 0 !important;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Link Styling */
+a {
+  color: var(--retro-primary) !important;
+  text-decoration: none;
+  position: relative;
+}
+
+a:hover {
+  text-decoration: none;
+  background-color: var(--retro-primary) !important;
+  color: white !important;
+}
+
+/* Retro Checkboxes */
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--retro-dark) !important;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--retro-primary) !important;
+}
+
+input[type="checkbox"]:checked:after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Retro Radio Buttons */
+input[type="radio"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--retro-dark) !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+input[type="radio"]:checked {
+  background-color: var(--retro-primary) !important;
+}
+
+input[type="radio"]:checked:after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  background: white;
+}
