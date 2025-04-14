@@ -9,7 +9,8 @@ import {
   PhoneIcon,
   ClockIcon,
   UserIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getPolicyHolder, getPolicies } from '@/lib/services/mockDataService';
@@ -134,22 +135,33 @@ export default function PolicyholderDetail() {
         {/* Policyholder Header */}
         <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
           <div className="px-4 py-5 sm:px-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xl font-semibold">
-                {policyholder.firstName.charAt(0)}{policyholder.lastName.charAt(0)}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xl font-semibold">
+                  {policyholder.firstName.charAt(0)}{policyholder.lastName.charAt(0)}
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    {policyholder.firstName} {policyholder.lastName}
+                  </h3>
+                  <div className="mt-1 flex items-center text-sm text-gray-500">
+                    <EnvelopeIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <span>{policyholder.email}</span>
+                  </div>
+                  <div className="mt-1 flex items-center text-sm text-gray-500">
+                    <PhoneIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <span>{policyholder.phone}</span>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {policyholder.firstName} {policyholder.lastName}
-                </h3>
-                <div className="mt-1 flex items-center text-sm text-gray-500">
-                  <EnvelopeIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  <span>{policyholder.email}</span>
-                </div>
-                <div className="mt-1 flex items-center text-sm text-gray-500">
-                  <PhoneIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  <span>{policyholder.phone}</span>
-                </div>
+              <div>
+                <Link 
+                  href={`/policyholders/${policyHolderId}/edit`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Edit Policyholder
+                </Link>
               </div>
             </div>
           </div>
