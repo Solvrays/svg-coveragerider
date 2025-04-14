@@ -11,8 +11,9 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policies, policyHolders, beneficiariesData, users } from '@/lib/data/mock-data';
-import { Policy, AuditEntry, FieldChange } from '@/lib/types';
+import { policyHolders, beneficiariesData } from '@/lib/data/mock-data';
+import { Policy, FieldChange } from '@/lib/types';
+import { getPolicy, updatePolicy } from '@/lib/services/mockDataService';
 
 export default function PolicyEditClient({ id }: { id: string }) {
   const router = useRouter();
@@ -39,30 +40,40 @@ export default function PolicyEditClient({ id }: { id: string }) {
 
   const [selectedPolicyholders, setSelectedPolicyholders] = useState<string[]>([]);
   const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<string[]>([]);
-  const [availablePolicyholders, setAvailablePolicyholders] = useState(policyHolders);
-  const [availableBeneficiaries, setAvailableBeneficiaries] = useState(beneficiariesData);
+  const [availablePolicyholders] = useState(policyHolders);
+  const [availableBeneficiaries] = useState(beneficiariesData);
 
   // Load policy data
   useEffect(() => {
-    const policy = policies.find(p => p.id === id);
-    
-    if (policy) {
-      // Store original data for comparison when tracking changes
-      setOriginalData({...policy});
-      
-      setFormData({
-        ...policy,
-      });
+    const loadPolicy = async () => {
+      try {
+        const policy = await getPolicy(id);
+        
+        if (policy) {
+          // Store original data for comparison when tracking changes
+          setOriginalData({...policy});
+          
+          setFormData({
+            ...policy,
+          });
 
-      // Set selected policyholders and beneficiaries
-      setSelectedPolicyholders(policy.policyholderIds || []);
-      setSelectedBeneficiaries(policy.beneficiaryIds || []);
-      
-      setLoading(false);
-    } else {
-      setNotFound(true);
-      setLoading(false);
-    }
+          // Set selected policyholders and beneficiaries
+          setSelectedPolicyholders(policy.policyholderIds || []);
+          setSelectedBeneficiaries(policy.beneficiaryIds || []);
+          
+          setLoading(false);
+        } else {
+          setNotFound(true);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error loading policy:", error);
+        setNotFound(true);
+        setLoading(false);
+      }
+    };
+
+    loadPolicy();
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -108,7 +119,7 @@ export default function PolicyEditClient({ id }: { id: string }) {
     setSelectedBeneficiaries(selectedValues);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Track field changes for audit trail
@@ -144,35 +155,23 @@ export default function PolicyEditClient({ id }: { id: string }) {
       });
     }
     
-    // Create audit trail entry for the update
-    const auditEntry: AuditEntry = {
-      id: `audit-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      userId: 'user-001', // In a real app, this would be the logged-in user's ID
-      userName: 'Admin User', // In a real app, this would be the logged-in user's name
-      action: 'update',
-      entityType: 'policy',
-      entityId: id,
-      changes: fieldChanges,
-      notes: `Policy updated on ${new Date().toLocaleString()}`
-    };
-    
-    // Update the policy with the new data and audit trail
+    // Update the policy with the new data
     const updatedPolicy: Policy = {
       ...formData as Policy,
       policyholderIds: selectedPolicyholders,
-      beneficiaryIds: selectedBeneficiaries,
-      auditTrail: [
-        ...(formData.auditTrail || []),
-        auditEntry
-      ]
+      beneficiaryIds: selectedBeneficiaries
     };
     
-    // In a real app, this would be an API call to update the policy
-    console.log('Updated policy:', updatedPolicy);
-    
-    // Redirect back to the policy detail page
-    router.push(`/policies/${id}`);
+    try {
+      // Save the policy with the mock data service
+      await updatePolicy(updatedPolicy, fieldChanges);
+      
+      // Redirect back to the policy detail page
+      router.push(`/policies/${id}`);
+    } catch (err) {
+      console.error("Error updating policy:", err);
+      // In a real app, you would show an error message to the user
+    }
   };
 
   // Format date for display
@@ -489,7 +488,7 @@ export default function PolicyEditClient({ id }: { id: string }) {
                           aria-label="Select policyholders"
                           title="Select one or more policyholders"
                         >
-                          {policyHolders.map(ph => (
+                          {availablePolicyholders.map(ph => (
                             <option key={ph.id} value={ph.id}>
                               {ph.firstName} {ph.lastName} ({ph.email})
                             </option>
@@ -514,7 +513,7 @@ export default function PolicyEditClient({ id }: { id: string }) {
                           aria-label="Select beneficiaries"
                           title="Select one or more beneficiaries"
                         >
-                          {beneficiariesData.map(b => (
+                          {availableBeneficiaries.map(b => (
                             <option key={b.id} value={b.id}>
                               {b.firstName} {b.lastName} ({b.relationship})
                             </option>

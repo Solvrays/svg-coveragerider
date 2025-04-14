@@ -1,21 +1,73 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon, 
   EnvelopeIcon, 
-  PhoneIcon 
+  PhoneIcon,
+  ClockIcon,
+  UserIcon,
+  PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policyHolders, policies } from '@/lib/data/mock-data';
+import { getPolicyHolder, getPolicies } from '@/lib/services/mockDataService';
+import { PolicyHolder, Policy } from '@/lib/types';
 
 export default function PolicyholderDetail() {
   const { id } = useParams();
   const policyHolderId = Array.isArray(id) ? id[0] : id;
   
-  const policyholder = policyHolders.find(p => p.id === policyHolderId);
-  if (!policyholder) {
+  const [policyholder, setPolicyholder] = useState<PolicyHolder | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  // Load data from mock service
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const policyholderData = await getPolicyHolder(policyHolderId);
+        const policiesData = await getPolicies();
+        
+        if (policyholderData) {
+          setPolicyholder(policyholderData);
+          setPolicies(policiesData);
+        } else {
+          setNotFound(true);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setNotFound(true);
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [policyHolderId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="flex items-center mb-6">
+            <Link href="/policyholders" className="text-indigo-600 hover:text-indigo-900 flex items-center">
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              Back to Policyholders
+            </Link>
+          </div>
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+            <p className="text-gray-500">Loading policyholder details...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  if (notFound || !policyholder) {
     return (
       <DashboardLayout>
         <div className="py-4">
@@ -33,7 +85,9 @@ export default function PolicyholderDetail() {
     );
   }
 
-  const policyholderPolicies = policies.filter(policy => policyholder.policies.includes(policy.id));
+  const policyholderPolicies = policies.filter(policy => 
+    policyholder.policies && policyholder.policies.includes(policy.id)
+  );
   const activePolicies = policyholderPolicies.filter(policy => policy.status === 'Active');
   const pendingPolicies = policyholderPolicies.filter(policy => policy.status === 'Pending');
   
@@ -47,6 +101,24 @@ export default function PolicyholderDetail() {
       currency: 'USD',
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
   };
 
   return (
@@ -138,13 +210,13 @@ export default function PolicyholderDetail() {
           </div>
         </div>
 
-        {/* Personal Information */}
+        {/* Policyholder Information */}
         <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
           <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Personal Information</h3>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Policyholder Information</h3>
             <p className="mt-1 max-w-2xl text-sm text-gray-500">Personal details and contact information.</p>
           </div>
-          <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
+          <div className="border-t border-gray-200">
             <dl className="sm:divide-y sm:divide-gray-200">
               <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
@@ -179,6 +251,68 @@ export default function PolicyholderDetail() {
                 </dd>
               </div>
             </dl>
+          </div>
+        </div>
+
+        {/* Audit Trail */}
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+          <div className="px-4 py-5 sm:px-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Audit Trail</h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">History of changes to this policyholder.</p>
+          </div>
+          <div className="border-t border-gray-200">
+            <div className="px-4 py-5 sm:p-0">
+              <div className="sm:divide-y sm:divide-gray-200">
+                {policyholder.auditTrail && policyholder.auditTrail.length > 0 ? (
+                  <div className="overflow-y-auto max-h-96">
+                    {policyholder.auditTrail.map((entry) => (
+                      <dl key={entry.id} className="px-4 py-4 sm:px-6 border-b border-gray-200">
+                        <div className="flex items-center mb-2">
+                          <ClockIcon className="h-5 w-5 text-gray-400 mr-2" />
+                          <dt className="sr-only">Timestamp</dt>
+                          <dd className="text-sm text-gray-500">{formatDate(entry.timestamp)}</dd>
+                        </div>
+                        <div className="flex items-center mb-2">
+                          <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
+                          <dt className="sr-only">User</dt>
+                          <dd className="text-sm font-medium text-gray-900">{entry.userName}</dd>
+                        </div>
+                        <div className="flex items-center mb-2">
+                          <PencilSquareIcon className="h-5 w-5 text-gray-400 mr-2" />
+                          <dt className="sr-only">Action</dt>
+                          <dd className="text-sm text-gray-700 capitalize">{entry.action}</dd>
+                        </div>
+                        {entry.changes && entry.changes.length > 0 && (
+                          <div className="mt-2 border-t border-gray-100 pt-2">
+                            <dt className="sr-only">Changes</dt>
+                            <dd>
+                              <h4 className="text-xs font-medium text-gray-500 mb-1">Changes:</h4>
+                              <ul className="space-y-1 text-gray-900">
+                                {entry.changes.map((change, index) => (
+                                  <li key={`${change.field}-${index}`} className="text-xs">
+                                    <span className="font-medium">{change.field}:</span> {change.oldValue ? String(change.oldValue) : "(empty)"} → {change.newValue ? String(change.newValue) : "(empty)"}
+                                  </li>
+                                ))}
+                              </ul>
+                            </dd>
+                          </div>
+                        )}
+                        {entry.notes && (
+                          <div className="mt-2">
+                            <dt className="sr-only">Notes</dt>
+                            <dd className="text-sm text-gray-900">{entry.notes}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-5 sm:px-6">
+                    <p className="text-sm text-gray-500">No audit records found for this policyholder.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   MagnifyingGlassIcon, 
@@ -11,7 +11,8 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policyHolders, policies } from '@/lib/data/mock-data';
+import { getPolicyHolders, getPolicies } from '@/lib/services/mockDataService';
+import { PolicyHolder, Policy } from '@/lib/types';
 
 export default function PolicyholdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +21,28 @@ export default function PolicyholdersPage() {
   const [filterRiskClass, setFilterRiskClass] = useState('All');
   const [filterSmoker, setFilterSmoker] = useState('All');
   const [filterMaritalStatus, setFilterMaritalStatus] = useState('All');
+  const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load data from mock service
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const policyHoldersData = await getPolicyHolders();
+        const policiesData = await getPolicies();
+        
+        setPolicyHolders(policyHoldersData);
+        setPolicies(policiesData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // Get unique values for filters
   const riskClasses = ['All', ...new Set(policyHolders
@@ -72,8 +95,8 @@ export default function PolicyholdersPage() {
         bValue = b.phone;
         break;
       case 'policies':
-        aValue = a.policies.length;
-        bValue = b.policies.length;
+        aValue = a.policies ? a.policies.length : 0;
+        bValue = b.policies ? b.policies.length : 0;
         break;
       case 'riskClass':
         aValue = a.riskClass || '';
@@ -142,6 +165,19 @@ export default function PolicyholdersPage() {
     }
     return age;
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -354,9 +390,9 @@ export default function PolicyholdersPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedPolicyholders.map((policyholder) => {
-                      const policyCount = policyholder.policies.length;
+                      const policyCount = policyholder.policies ? policyholder.policies.length : 0;
                       const activePolicies = policies.filter(
-                        policy => policyholder.policies.includes(policy.id) && policy.status === 'Active'
+                        policy => policyholder.policies && policyholder.policies.includes(policy.id) && policy.status === 'Active'
                       ).length;
                       const age = calculateAge(policyholder.dateOfBirth);
                       

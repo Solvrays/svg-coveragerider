@@ -56,11 +56,10 @@ body {
 
 /* Pixel art image rendering */
 .pixel-art {
-  -ms-interpolation-mode: nearest-neighbor;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+  image-rendering: -webkit-optimize-contrast; /* Edge */
+  image-rendering: -moz-crisp-edges; /* Firefox */
+  image-rendering: crisp-edges; /* Standard */
+  image-rendering: pixelated; /* Chrome, Safari */
 }
 
 img.pixel-art,
