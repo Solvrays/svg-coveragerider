@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/cr-logo.png" />
+        <link rel="icon" href="https://res.cloudinary.com/dqql2wlbt/image/upload/v1741110204/solvrays-grayscale_kqvimw.svg" type="image/svg+xml" />
       </head>
       <body className={`${inter.className} ${spaceMono.variable} ${dmSans.variable}`}>{children}</body>
     </html>
