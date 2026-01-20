@@ -237,3 +237,52 @@ export interface BeneficiaryFormData {
   percentage: number;
   address?: Address;
 }
+
+// Cash Value related types
+export interface CashValueDetails {
+  policyId: string;
+  policyNumber: string;
+  currentCashValue: number;
+  surrenderValue: number;
+  surrenderCharges: number;
+  loanBalance: number;
+  netSurrenderValue: number;
+  accumulatedDividends: number;
+  paidUpAdditions: number;
+  guaranteedCashValue: number;
+  nonGuaranteedCashValue: number;
+  lastCalculatedDate: string;
+}
+
+export interface SurrenderRequest {
+  id: string;
+  policyId: string;
+  policyNumber: string;
+  requestDate: string;
+  surrenderType: SurrenderType;
+  requestedAmount: number;
+  netPayoutAmount: number;
+  surrenderCharges: number;
+  taxWithholding: number;
+  status: SurrenderRequestStatus;
+  reason: string;
+  paymentMethod: PaymentMethod;
+  bankAccountLast4?: string;
+  processedDate?: string;
+  confirmationNumber?: string;
+  auditTrail?: AuditEntry[];
+}
+
+export type SurrenderType = 'Full' | 'Partial';
+
+export type SurrenderRequestStatus = 'Pending' | 'Approved' | 'Processing' | 'Completed' | 'Rejected';
+
+export type PaymentMethod = 'Check' | 'ACH' | 'Wire';
+
+export interface SurrenderFormData {
+  surrenderType: SurrenderType;
+  partialAmount?: number;
+  reason: string;
+  paymentMethod: PaymentMethod;
+  bankAccountLast4?: string;
+}

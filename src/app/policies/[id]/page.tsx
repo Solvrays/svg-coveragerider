@@ -75,6 +75,9 @@ export default function PolicyDetail() {
     { name: 'History', href: '#history', current: false },
   ];
 
+  // Check if policy has cash value
+  const hasCashValue = policy.cashValue !== undefined && policy.cashValue > 0;
+
   return (
     <DashboardLayout>
       <div className="py-4">
@@ -108,6 +111,15 @@ export default function PolicyDetail() {
               }`}>
                 {policy.status}
               </span>
+              {hasCashValue && (
+                <Link
+                  href={`/policies/${policy.id}/cash-value`}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <CurrencyDollarIcon className="h-4 w-4 mr-1 text-green-500" aria-hidden="true" />
+                  Cash Value
+                </Link>
+              )}
               <Link
                 href={`/policies/${policy.id}/edit`}
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
