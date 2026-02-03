@@ -10,7 +10,8 @@ import {
   UserIcon, 
   ShieldCheckIcon,
   ChartPieIcon,
-  CogIcon
+  CogIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Beneficiaries', href: '/beneficiaries', icon: UserGroupIcon },
   { name: 'Benefits', href: '/benefits', icon: ShieldCheckIcon },
   { name: 'Reports', href: '/reports', icon: ChartPieIcon },
+  { name: 'Data', href: '/data-management', icon: CircleStackIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ];
 
