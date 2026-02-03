@@ -1,5 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import { 
+  policies as initialPolicies, 
+  policyHolders as initialPolicyHolders, 
+  beneficiariesData as initialBeneficiaries,
+  auditEntries as initialAuditEntries
+} from '@/lib/data/mock-data';
 
 // Data directory for persistent storage
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -254,15 +260,37 @@ export class PersistenceService<T extends { id: string }> {
   }
 }
 
+// Helper to convert array to persistence store format
+function arrayToStore<T extends { id: string }>(items: T[]): PersistenceStore<T> {
+  const records: Record<string, PersistenceRecord<T>> = {};
+  for (const item of items) {
+    records[item.id] = {
+      id: item.id,
+      original: JSON.parse(JSON.stringify(item)),
+      current: JSON.parse(JSON.stringify(item)),
+      lastModified: new Date().toISOString(),
+      modificationHistory: [],
+    };
+  }
+  return {
+    records,
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
 // Export functions for bulk operations
 export function exportAllData(): BulkExportData {
-  const readFile = (filePath: string) => {
+  const readFileOrFallback = <T extends { id: string }>(filePath: string, fallbackData: T[]): PersistenceStore<T> | null => {
     try {
       if (typeof window === 'undefined' && fs.existsSync(filePath)) {
         return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       }
     } catch {
-      // Ignore
+      // Ignore file read errors
+    }
+    // Return mock data as fallback if no persisted data exists
+    if (fallbackData && fallbackData.length > 0) {
+      return arrayToStore(fallbackData);
     }
     return null;
   };
@@ -271,10 +299,10 @@ export function exportAllData(): BulkExportData {
     exportedAt: new Date().toISOString(),
     version: '1.0.0',
     data: {
-      policies: readFile(FILES.policies),
-      policyHolders: readFile(FILES.policyHolders),
-      beneficiaries: readFile(FILES.beneficiaries),
-      auditEntries: readFile(FILES.auditEntries),
+      policies: readFileOrFallback(FILES.policies, initialPolicies as { id: string }[]),
+      policyHolders: readFileOrFallback(FILES.policyHolders, initialPolicyHolders as { id: string }[]),
+      beneficiaries: readFileOrFallback(FILES.beneficiaries, initialBeneficiaries as { id: string }[]),
+      auditEntries: readFileOrFallback(FILES.auditEntries, initialAuditEntries as { id: string }[]),
     },
   };
 }
