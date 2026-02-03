@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { importAllData, BulkExportData } from '@/lib/services/persistence';
+import { reloadFromPersistence } from '@/lib/services/mockDataService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
     const result = importAllData(data);
     
     if (result.success) {
+      // Reload in-memory data from persisted files
+      reloadFromPersistence();
+      
       return NextResponse.json({
         success: true,
         message: 'Data imported successfully. Refresh the page to load new data.',

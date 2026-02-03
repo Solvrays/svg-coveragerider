@@ -22,7 +22,47 @@ import {
 let policies = [...initialPolicies];
 let policyHolders = [...initialPolicyHolders];
 let beneficiaries = [...initialBeneficiaries];
-let auditEntries = [...initialAuditEntries || []];
+let auditEntries = [...(initialAuditEntries || [])];
+let dataInitialized = false;
+
+// Function to reload data from persistence (called from server-side API routes)
+export const reloadFromPersistence = () => {
+  dataInitialized = false;
+  ensureDataLoaded();
+};
+
+// Initialize data from persistence on first server-side access
+const ensureDataLoaded = () => {
+  if (typeof window === 'undefined' && !dataInitialized) {
+    // Synchronous initialization for server-side
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('fs');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const path = require('path');
+      const DATA_DIR = path.join(process.cwd(), 'data');
+      
+      const loadFromFile = <T extends { id: string }>(filename: string, fallback: T[]): T[] => {
+        const filePath = path.join(DATA_DIR, filename);
+        if (fs.existsSync(filePath)) {
+          const store = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          if (store.records && Object.keys(store.records).length > 0) {
+            return Object.values(store.records).map((r: { current: T }) => r.current);
+          }
+        }
+        return fallback;
+      };
+      
+      policies = loadFromFile<Policy>('policies.json', initialPolicies);
+      policyHolders = loadFromFile<PolicyHolder>('policyHolders.json', initialPolicyHolders);
+      beneficiaries = loadFromFile<Beneficiary>('beneficiaries.json', initialBeneficiaries);
+      auditEntries = loadFromFile<AuditEntry>('auditEntries.json', initialAuditEntries || []);
+      dataInitialized = true;
+    } catch {
+      // Ignore errors - use initial data
+    }
+  }
+};
 
 // Get current user (in a real app, this would come from authentication)
 const getCurrentUser = () => {
@@ -62,10 +102,12 @@ const createAuditEntry = (
 
 // Policy methods
 export const getPolicies = () => {
+  ensureDataLoaded();
   return [...policies];
 };
 
 export const getPolicy = (id: string) => {
+  ensureDataLoaded();
   return policies.find(p => p.id === id);
 };
 
@@ -128,10 +170,12 @@ export const createPolicy = (newPolicy: Omit<Policy, 'id'>) => {
 
 // Policyholder methods
 export const getPolicyHolders = () => {
+  ensureDataLoaded();
   return [...policyHolders];
 };
 
 export const getPolicyHolder = (id: string) => {
+  ensureDataLoaded();
   return policyHolders.find(ph => ph.id === id);
 };
 
@@ -194,14 +238,17 @@ export const createPolicyHolder = (newPolicyHolder: Omit<PolicyHolder, 'id'>) =>
 
 // Beneficiary methods
 export const getBeneficiaries = () => {
+  ensureDataLoaded();
   return [...beneficiaries];
 };
 
 export const getBeneficiary = (id: string) => {
+  ensureDataLoaded();
   return beneficiaries.find(b => b.id === id);
 };
 
 export const getBeneficiariesByPolicyId = (policyId: string) => {
+  ensureDataLoaded();
   return beneficiaries.filter(b => b.policyId === policyId);
 };
 

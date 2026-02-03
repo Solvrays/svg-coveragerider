@@ -260,6 +260,21 @@ export class PersistenceService<T extends { id: string }> {
   }
 }
 
+// Helper to load persisted data or return fallback
+export function loadPersistedData<T extends { id: string }>(type: keyof typeof FILES, fallbackData: T[]): T[] {
+  try {
+    if (typeof window === 'undefined' && fs.existsSync(FILES[type])) {
+      const store: PersistenceStore<T> = JSON.parse(fs.readFileSync(FILES[type], 'utf-8'));
+      if (store.records && Object.keys(store.records).length > 0) {
+        return Object.values(store.records).map(r => r.current);
+      }
+    }
+  } catch {
+    // Ignore file read errors
+  }
+  return fallbackData;
+}
+
 // Helper to convert array to persistence store format
 function arrayToStore<T extends { id: string }>(items: T[]): PersistenceStore<T> {
   const records: Record<string, PersistenceRecord<T>> = {};
