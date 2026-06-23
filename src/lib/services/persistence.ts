@@ -26,6 +26,7 @@ const FILES = {
   policies: path.join(DATA_DIR, 'policies.json'),
   policyHolders: path.join(DATA_DIR, 'policyHolders.json'),
   beneficiaries: path.join(DATA_DIR, 'beneficiaries.json'),
+  benefits: path.join(DATA_DIR, 'benefits.json'),
   auditEntries: path.join(DATA_DIR, 'auditEntries.json'),
 };
 
@@ -171,7 +172,7 @@ export class PersistenceService<T extends { id: string }> {
     record.lastModified = new Date().toISOString();
     record.modificationHistory.push({
       timestamp: new Date().toISOString(),
-      changes: { _reset: true } as Partial<T>,
+      changes: ({ _reset: true } as unknown) as Partial<T>,
     });
 
     this.saveStore();
@@ -376,4 +377,5 @@ export function clearAllData(): void {
 export const policiesPersistence = new PersistenceService<{ id: string }>('policies');
 export const policyHoldersPersistence = new PersistenceService<{ id: string }>('policyHolders');
 export const beneficiariesPersistence = new PersistenceService<{ id: string }>('beneficiaries');
+export const benefitsPersistence = new PersistenceService<{ id: string }>('benefits');
 export const auditEntriesPersistence = new PersistenceService<{ id: string }>('auditEntries');

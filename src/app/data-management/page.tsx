@@ -271,8 +271,8 @@ export default function DataManagementPage() {
             </div>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            Reset all records to their original state. This undoes any 
-            changes made while keeping the data persisted.
+            Reset all policies, policyholders, beneficiaries, benefits, and audit entries 
+            to their original state. This undoes any changes made while keeping the data persisted.
           </p>
           <button
             onClick={handleResetAll}
@@ -357,8 +357,21 @@ export default function DataManagementPage() {
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li><code className="bg-gray-200 px-1 rounded">GET /api/data/export</code> - Export all data</li>
             <li><code className="bg-gray-200 px-1 rounded">POST /api/data/import</code> - Import data</li>
-            <li><code className="bg-gray-200 px-1 rounded">POST /api/data/reset</code> - Reset all records</li>
+            <li><code className="bg-gray-200 px-1 rounded">POST /api/data/reset</code> - Reset all records (policies, policyholders, beneficiaries, benefits, audit entries)</li>
             <li><code className="bg-gray-200 px-1 rounded">DELETE /api/data/clear</code> - Clear all data</li>
+          </ul>
+          <p className="mt-3">
+            <strong>Record APIs:</strong>
+          </p>
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            <li><code className="bg-gray-200 px-1 rounded">GET/POST /api/policies</code> - List &amp; create policies</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/PUT/PATCH /api/policies/[id]</code> - Read &amp; update a policy</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/POST /api/policyholders</code> - List &amp; create policyholders</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/PUT/PATCH /api/policyholders/[id]</code> - Read &amp; update a policyholder</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/POST /api/beneficiaries</code> - List &amp; create beneficiaries</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/PUT/PATCH /api/beneficiaries/[id]</code> - Read &amp; update a beneficiary</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/POST /api/benefits</code> - List &amp; create benefits</li>
+            <li><code className="bg-gray-200 px-1 rounded">GET/PUT/PATCH/DELETE /api/benefits/[id]</code> - Read, update &amp; delete a benefit</li>
           </ul>
         </div>
       </div>

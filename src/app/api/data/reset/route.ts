@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { 
   policiesPersistence, 
   policyHoldersPersistence, 
-  beneficiariesPersistence 
+  beneficiariesPersistence,
+  benefitsPersistence,
+  auditEntriesPersistence
 } from '@/lib/services/persistence';
 
 export async function POST() {
@@ -10,6 +12,8 @@ export async function POST() {
     policiesPersistence.resetAllRecords();
     policyHoldersPersistence.resetAllRecords();
     beneficiariesPersistence.resetAllRecords();
+    benefitsPersistence.resetAllRecords();
+    auditEntriesPersistence.resetAllRecords();
     
     return NextResponse.json({
       success: true,
