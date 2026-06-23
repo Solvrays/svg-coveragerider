@@ -3,6 +3,7 @@ import {
   Policy, 
   PolicyHolder, 
   Beneficiary, 
+  Benefit,
   AuditEntry, 
   FieldChange,
   CashValueDetails,
@@ -15,6 +16,7 @@ import {
   policies as initialPolicies, 
   policyHolders as initialPolicyHolders, 
   beneficiariesData as initialBeneficiaries,
+  benefits as initialBenefits,
   auditEntries as initialAuditEntries
 } from '@/lib/data/mock-data';
 
@@ -22,6 +24,7 @@ import {
 let policies = [...initialPolicies];
 let policyHolders = [...initialPolicyHolders];
 let beneficiaries = [...initialBeneficiaries];
+let benefits = [...initialBenefits];
 let auditEntries = [...(initialAuditEntries || [])];
 let dataInitialized = false;
 
@@ -56,6 +59,7 @@ const ensureDataLoaded = () => {
       policies = loadFromFile<Policy>('policies.json', initialPolicies);
       policyHolders = loadFromFile<PolicyHolder>('policyHolders.json', initialPolicyHolders);
       beneficiaries = loadFromFile<Beneficiary>('beneficiaries.json', initialBeneficiaries);
+      benefits = loadFromFile<Benefit>('benefits.json', initialBenefits);
       auditEntries = loadFromFile<AuditEntry>('auditEntries.json', initialAuditEntries || []);
       dataInitialized = true;
     } catch {
@@ -327,7 +331,76 @@ export const resetMockData = () => {
   policies = [...initialPolicies];
   policyHolders = [...initialPolicyHolders];
   beneficiaries = [...initialBeneficiaries];
+  benefits = [...initialBenefits];
   auditEntries = [...initialAuditEntries || []];
+};
+
+// Benefit methods
+export const getBenefits = () => {
+  ensureDataLoaded();
+  return [...benefits];
+};
+
+export const getBenefit = (id: string) => {
+  ensureDataLoaded();
+  return benefits.find(b => b.id === id);
+};
+
+export const getBenefitsByPolicyId = (policyId: string) => {
+  ensureDataLoaded();
+  return benefits.filter(b => b.policyId === policyId);
+};
+
+export const updateBenefit = (updatedBenefit: Benefit, changes: FieldChange[]) => {
+  const auditEntry = createAuditEntry(
+    'update',
+    'benefit',
+    updatedBenefit.id,
+    changes,
+    `Benefit updated on ${new Date().toLocaleString()}`
+  );
+
+  const benefitWithAudit = {
+    ...updatedBenefit,
+    auditTrail: [
+      ...(updatedBenefit.auditTrail || []),
+      auditEntry
+    ]
+  };
+
+  benefits = benefits.map(b =>
+    b.id === benefitWithAudit.id ? benefitWithAudit : b
+  );
+
+  auditEntries.push(auditEntry);
+  return benefitWithAudit;
+};
+
+export const createBenefit = (newBenefit: Omit<Benefit, 'id'>) => {
+  const benefit = {
+    ...newBenefit,
+    id: generateId('bnf')
+  } as Benefit;
+
+  const auditEntry = createAuditEntry(
+    'create',
+    'benefit',
+    benefit.id,
+    undefined,
+    `Benefit created on ${new Date().toLocaleString()}`
+  );
+
+  benefit.auditTrail = [auditEntry];
+  benefits.push(benefit);
+  auditEntries.push(auditEntry);
+  return benefit;
+};
+
+export const deleteBenefit = (id: string): boolean => {
+  const index = benefits.findIndex(b => b.id === id);
+  if (index === -1) return false;
+  benefits.splice(index, 1);
+  return true;
 };
 
 // Mock cash value data for policies with cash value
