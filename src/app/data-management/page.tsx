@@ -14,9 +14,11 @@ interface PolicyApiState {
   error: string | null;
 }
 
-const PAS_API_BASE = 'http://localhost:3000/api';
+const PAS_API_BASE = '/api';
 
-const POLICY_STATUS_OPTIONS = ['', 'Active', 'Pending', 'Expired', 'Cancelled', 'Non-Renewed'];
+const POLICY_STATUS_OPTIONS = ['', 'Active', 'Pending', 'Lapsed', 'Cancelled', 'Expired', 'Paid Up'];
+
+const POLICY_TYPE_OPTIONS = ['', 'Term Life', 'Whole Life', 'Universal Life', 'Variable Life', 'Annuity', 'Group Life'];
 
 export default function DataManagementPage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -24,19 +26,22 @@ export default function DataManagementPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── PAS Policies API Explorer state ────────────────────────────────────────
-  const [listFilters, setListFilters] = useState({ search: '', status: '', natcat: '' });
+  // ── Policies API Explorer state ─────────────────────────────────────────────
+  const [listFilters, setListFilters] = useState({ status: '', policyType: '', policyholderId: '' });
   const [listState, setListState] = useState<PolicyApiState>({ result: null, loading: false, error: null });
 
-  const [getNumber, setGetNumber] = useState('');
+  const [searchFilters, setSearchFilters] = useState({ polNum: '', firstName: '', lastName: '' });
+  const [searchState, setSearchState] = useState<PolicyApiState>({ result: null, loading: false, error: null });
+
+  const [getId, setGetId] = useState('');
   const [getState, setGetState] = useState<PolicyApiState>({ result: null, loading: false, error: null });
 
-  const [updateNumber, setUpdateNumber] = useState('');
+  const [updateId, setUpdateId] = useState('');
   const [updatePayload, setUpdatePayload] = useState(JSON.stringify({ status: 'Active', notes: '' }, null, 2));
   const [updateState, setUpdateState] = useState<PolicyApiState>({ result: null, loading: false, error: null });
 
   const [createPayload, setCreatePayload] = useState(
-    JSON.stringify({ policyHolder: 'New Holder', email: 'holder@example.com', type: 'Home Insurance', lineOfBusiness: 'Homeowners', effectiveDate: '2025-08-01', premium: 3200, deductible: 2000, address: { street1: '100 Main St', street2: '', city: 'Raleigh', state: 'NC', zip: '27601' } }, null, 2)
+    JSON.stringify({ policyNumber: 'LFP-99999999', policyType: 'Term Life', status: 'Pending', issueDate: '2025-08-01', effectiveDate: '2025-08-15', premiumAmount: 45.0, premiumFrequency: 'Monthly', faceAmount: 250000, policyholderIds: ['ph-001'], beneficiaryIds: [] }, null, 2)
   );
   const [createState, setCreateState] = useState<PolicyApiState>({ result: null, loading: false, error: null });
 
@@ -44,9 +49,9 @@ export default function DataManagementPage() {
     setListState({ result: null, loading: true, error: null });
     try {
       const params = new URLSearchParams();
-      if (listFilters.search) params.set('search', listFilters.search);
       if (listFilters.status) params.set('status', listFilters.status);
-      if (listFilters.natcat) params.set('natcat', listFilters.natcat);
+      if (listFilters.policyType) params.set('policyType', listFilters.policyType);
+      if (listFilters.policyholderId) params.set('policyholderId', listFilters.policyholderId);
       const res = await fetch(`${PAS_API_BASE}/policies?${params.toString()}`);
       const data = await res.json();
       setListState({ result: data, loading: false, error: res.ok ? null : (data.error ?? 'Error') });
@@ -55,11 +60,27 @@ export default function DataManagementPage() {
     }
   };
 
+  const handleSearchPolicies = async () => {
+    if (!searchFilters.polNum && !searchFilters.firstName && !searchFilters.lastName) return;
+    setSearchState({ result: null, loading: true, error: null });
+    try {
+      const params = new URLSearchParams();
+      if (searchFilters.polNum) params.set('polNum', searchFilters.polNum);
+      if (searchFilters.firstName) params.set('firstName', searchFilters.firstName);
+      if (searchFilters.lastName) params.set('lastName', searchFilters.lastName);
+      const res = await fetch(`${PAS_API_BASE}/policies/search?${params.toString()}`);
+      const data = await res.json();
+      setSearchState({ result: data, loading: false, error: res.ok ? null : (data.error ?? 'Error') });
+    } catch (e) {
+      setSearchState({ result: null, loading: false, error: e instanceof Error ? e.message : 'Request failed' });
+    }
+  };
+
   const handleGetPolicy = async () => {
-    if (!getNumber.trim()) return;
+    if (!getId.trim()) return;
     setGetState({ result: null, loading: true, error: null });
     try {
-      const res = await fetch(`${PAS_API_BASE}/policies/${encodeURIComponent(getNumber.trim())}`);
+      const res = await fetch(`${PAS_API_BASE}/policies/${encodeURIComponent(getId.trim())}`);
       const data = await res.json();
       setGetState({ result: data, loading: false, error: res.ok ? null : (data.error ?? 'Not found') });
     } catch (e) {
@@ -68,11 +89,11 @@ export default function DataManagementPage() {
   };
 
   const handleUpdatePolicy = async () => {
-    if (!updateNumber.trim()) return;
+    if (!updateId.trim()) return;
     setUpdateState({ result: null, loading: true, error: null });
     try {
       const body = JSON.parse(updatePayload);
-      const res = await fetch(`${PAS_API_BASE}/policies/${encodeURIComponent(updateNumber.trim())}`, {
+      const res = await fetch(`${PAS_API_BASE}/policies/${encodeURIComponent(updateId.trim())}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -462,7 +483,7 @@ export default function DataManagementPage() {
         </div>
       </div>
 
-      {/* ── PAS Simulation — Policies API Explorer ─────────────────────────── */}
+      {/* ── Policies API Explorer ─────────────────────────── */}
       <div className="mt-10">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-orange-100 rounded-lg">
@@ -471,9 +492,9 @@ export default function DataManagementPage() {
             </svg>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">PAS Simulation — Policies API</h2>
+            <h2 className="text-xl font-bold text-gray-900">Policies API Explorer</h2>
             <p className="text-sm text-gray-500">
-              Live explorer for <code className="bg-gray-100 px-1 rounded font-mono text-xs">{PAS_API_BASE}/policies</code> &nbsp;·&nbsp; Guidewire PolicyCenter Simulation
+              Live explorer for <code className="bg-gray-100 px-1 rounded font-mono text-xs">{PAS_API_BASE}/policies</code>
             </p>
           </div>
         </div>
@@ -481,14 +502,12 @@ export default function DataManagementPage() {
         {/* Endpoint reference pills */}
         <div className="flex flex-wrap gap-2 mb-6">
           {[
-            { method: 'GET', path: '/api/policies', desc: 'List all policies (filterable)' },
-            { method: 'GET', path: '/api/policies/:id', desc: 'Get policy by number' },
+            { method: 'GET', path: '/api/policies', desc: 'List policies (filter by status, policyType, policyholderId)' },
+            { method: 'GET', path: '/api/policies/search', desc: 'Search by policy number or holder name' },
+            { method: 'GET', path: '/api/policies/:id', desc: 'Get policy by internal ID' },
             { method: 'POST', path: '/api/policies', desc: 'Create new policy' },
             { method: 'PUT', path: '/api/policies/:id', desc: 'Update policy fields' },
-            { method: 'DELETE', path: '/api/policies/:id', desc: 'Soft-delete (→ Cancelled)' },
-            { method: 'POST', path: '/api/policies/cancel', desc: 'Cancel with reason' },
-            { method: 'POST', path: '/api/policies/renew', desc: 'Renew policy' },
-            { method: 'POST', path: '/api/policies/non-renew', desc: 'Mark non-renewed' },
+            { method: 'PATCH', path: '/api/policies/:id', desc: 'Partial update (alias for PUT)' },
           ].map((ep) => (
             <div key={ep.path + ep.method} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1 text-xs shadow-sm">
               <span className={`font-bold ${ep.method === 'GET' ? 'text-green-600' : ep.method === 'POST' ? 'text-blue-600' : ep.method === 'PUT' ? 'text-yellow-600' : 'text-red-600'}`}>
@@ -511,16 +530,6 @@ export default function DataManagementPage() {
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Search</label>
-                  <input
-                    type="text"
-                    placeholder="name, policy #, city…"
-                    value={listFilters.search}
-                    onChange={(e) => setListFilters((f) => ({ ...f, search: e.target.value }))}
-                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
                   <select
                     value={listFilters.status}
@@ -533,13 +542,25 @@ export default function DataManagementPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">NatCat Peril</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Policy Type</label>
+                  <select
+                    value={listFilters.policyType}
+                    onChange={(e) => setListFilters((f) => ({ ...f, policyType: e.target.value }))}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {POLICY_TYPE_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t || 'All Types'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Policyholder ID</label>
                   <input
                     type="text"
-                    placeholder="e.g. Wildfire"
-                    value={listFilters.natcat}
-                    onChange={(e) => setListFilters((f) => ({ ...f, natcat: e.target.value }))}
-                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. ph-001"
+                    value={listFilters.policyholderId}
+                    onChange={(e) => setListFilters((f) => ({ ...f, policyholderId: e.target.value }))}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                   />
                 </div>
               </div>
@@ -575,22 +596,97 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          {/* ── 2. Get Policy by Number ── */}
+          {/* ── 2. Search Policies ── */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-green-50 border-b border-green-100">
               <span className="text-xs font-bold text-green-700 bg-green-100 rounded px-2 py-0.5">GET</span>
-              <code className="text-sm text-gray-700">/api/policies/:policyNumber</code>
-              <span className="text-xs text-gray-500 ml-1">— Full policy detail</span>
+              <code className="text-sm text-gray-700">/api/policies/search</code>
+              <span className="text-xs text-gray-500 ml-1">— Search by policy number or holder name</span>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Policy Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. LFP-12345678"
+                    value={searchFilters.polNum}
+                    onChange={(e) => setSearchFilters((f) => ({ ...f, polNum: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchPolicies()}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Jane"
+                    value={searchFilters.firstName}
+                    onChange={(e) => setSearchFilters((f) => ({ ...f, firstName: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchPolicies()}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Doe"
+                    value={searchFilters.lastName}
+                    onChange={(e) => setSearchFilters((f) => ({ ...f, lastName: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchPolicies()}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleSearchPolicies}
+                disabled={searchState.loading || (!searchFilters.polNum && !searchFilters.firstName && !searchFilters.lastName)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {searchState.loading && (
+                  <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {searchState.loading ? 'Searching…' : 'Search Policies'}
+              </button>
+
+              {searchState.error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{searchState.error}</p>
+              )}
+              {searchState.result && (
+                <div>
+                  {typeof searchState.result === 'object' && searchState.result !== null && 'total' in searchState.result && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      <strong className="text-gray-800">{(searchState.result as { total: number }).total}</strong> policies matched
+                    </p>
+                  )}
+                  <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-auto max-h-72">
+                    {JSON.stringify(searchState.result, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── 3. Get Policy by ID ── */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-green-50 border-b border-green-100">
+              <span className="text-xs font-bold text-green-700 bg-green-100 rounded px-2 py-0.5">GET</span>
+              <code className="text-sm text-gray-700">/api/policies/:id</code>
+              <span className="text-xs text-gray-500 ml-1">— Full policy detail by internal ID</span>
             </div>
             <div className="p-5 space-y-4">
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Policy Number</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Policy ID</label>
                   <input
                     type="text"
-                    placeholder="e.g. POL-2025-011"
-                    value={getNumber}
-                    onChange={(e) => setGetNumber(e.target.value)}
+                    placeholder="e.g. pol-001"
+                    value={getId}
+                    onChange={(e) => setGetId(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleGetPolicy()}
                     className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                   />
@@ -598,7 +694,7 @@ export default function DataManagementPage() {
                 <div className="flex items-end">
                   <button
                     onClick={handleGetPolicy}
-                    disabled={getState.loading || !getNumber.trim()}
+                    disabled={getState.loading || !getId.trim()}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
                   >
                     {getState.loading ? 'Fetching…' : 'Fetch'}
@@ -607,10 +703,10 @@ export default function DataManagementPage() {
               </div>
 
               <div className="text-xs text-gray-400 flex flex-wrap gap-2">
-                {['POL-2025-001', 'POL-2025-011', 'POL-2025-013', 'POL-2025-020'].map((p) => (
+                {['pol-001', 'pol-002', 'pol-003', 'pol-004', 'pol-005'].map((p) => (
                   <button
                     key={p}
-                    onClick={() => setGetNumber(p)}
+                    onClick={() => setGetId(p)}
                     className="font-mono bg-gray-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded transition-colors"
                   >
                     {p}
@@ -629,21 +725,21 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          {/* ── 3. Update Policy ── */}
+          {/* ── 4. Update Policy ── */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-yellow-50 border-b border-yellow-100">
               <span className="text-xs font-bold text-yellow-700 bg-yellow-100 rounded px-2 py-0.5">PUT</span>
-              <code className="text-sm text-gray-700">/api/policies/:policyNumber</code>
+              <code className="text-sm text-gray-700">/api/policies/:id</code>
               <span className="text-xs text-gray-500 ml-1">— Partial update (push changes)</span>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Policy Number to Update</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Policy ID to Update</label>
                 <input
                   type="text"
-                  placeholder="e.g. POL-2025-011"
-                  value={updateNumber}
-                  onChange={(e) => setUpdateNumber(e.target.value)}
+                  placeholder="e.g. pol-001"
+                  value={updateId}
+                  onChange={(e) => setUpdateId(e.target.value)}
                   className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-yellow-500 font-mono"
                 />
               </div>
@@ -658,7 +754,7 @@ export default function DataManagementPage() {
               </div>
               <button
                 onClick={handleUpdatePolicy}
-                disabled={updateState.loading || !updateNumber.trim()}
+                disabled={updateState.loading || !updateId.trim()}
                 className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 disabled:opacity-50 transition-colors"
               >
                 {updateState.loading && (
@@ -681,7 +777,7 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          {/* ── 4. Create Policy ── */}
+          {/* ── 5. Create Policy ── */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-blue-50 border-b border-blue-100">
               <span className="text-xs font-bold text-blue-700 bg-blue-100 rounded px-2 py-0.5">POST</span>
