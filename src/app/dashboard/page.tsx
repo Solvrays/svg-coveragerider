@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ArrowUpIcon, 
@@ -10,52 +10,85 @@ import {
   ExclamationCircleIcon 
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policies, policyHolders } from '@/lib/data/mock-data';
-import { Policy } from '@/lib/types';
+import { fetchPolicies, fetchPolicyHolders } from '@/lib/services/apiClient';
+import { Policy, PolicyHolder } from '@/lib/types';
 
-// Calculate statistics
-const totalPolicies = policies.length;
-const activePolicies = policies.filter(policy => policy.status === 'Active').length;
-const pendingPolicies = policies.filter(policy => policy.status === 'Pending').length;
-const totalPolicyHolders = policyHolders.length;
+// Calculate next due date based on effectiveDate and premiumFrequency
+const getNextDueDate = (policy: Policy) => {
+  const effectiveDate = new Date(policy.effectiveDate);
+  const today = new Date();
+  const monthsToAdd =
+    policy.premiumFrequency === 'Monthly' ? 1 :
+    policy.premiumFrequency === 'Quarterly' ? 3 :
+    policy.premiumFrequency === 'Semi-Annual' ? 6 :
+    policy.premiumFrequency === 'Annual' ? 12 : 0;
 
-// Get policies with upcoming premium due dates
-const upcomingPremiums = [...policies]
-  .filter(policy => policy.status === 'Active')
-  .sort((a, b) => {
-    // Calculate next due date based on effectiveDate and premiumFrequency
-    const getNextDueDate = (policy: Policy) => {
-      const effectiveDate = new Date(policy.effectiveDate);
-      const today = new Date();
-      const monthsToAdd = 
-        policy.premiumFrequency === 'Monthly' ? 1 :
-        policy.premiumFrequency === 'Quarterly' ? 3 :
-        policy.premiumFrequency === 'Semi-Annual' ? 6 :
-        policy.premiumFrequency === 'Annual' ? 12 : 0;
-      
-      if (monthsToAdd === 0) return effectiveDate; // Single premium case
-      
-      // Find the next due date after today
-      const nextDueDate = new Date(effectiveDate);
-      while (nextDueDate < today) {
-        nextDueDate.setMonth(nextDueDate.getMonth() + monthsToAdd);
-      }
-      
-      return nextDueDate;
-    };
-    
-    return getNextDueDate(a).getTime() - getNextDueDate(b).getTime();
-  })
-  .slice(0, 5);
+  if (monthsToAdd === 0) return effectiveDate; // Single premium case
 
-// Get recent policies
-const recentPolicies = [...policies]
-  .sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
-  .slice(0, 5);
+  // Find the next due date after today
+  const nextDueDate = new Date(effectiveDate);
+  while (nextDueDate < today) {
+    nextDueDate.setMonth(nextDueDate.getMonth() + monthsToAdd);
+  }
+
+  return nextDueDate;
+};
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('month');
-  
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [policiesData, policyHoldersData] = await Promise.all([
+          fetchPolicies(),
+          fetchPolicyHolders(),
+        ]);
+        setPolicies(policiesData);
+        setPolicyHolders(policyHoldersData);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Calculate statistics
+  const totalPolicies = policies.length;
+  const activePolicies = policies.filter(policy => policy.status === 'Active').length;
+  const pendingPolicies = policies.filter(policy => policy.status === 'Pending').length;
+  const totalPolicyHolders = policyHolders.length;
+
+  // Get policies with upcoming premium due dates
+  const upcomingPremiums = [...policies]
+    .filter(policy => policy.status === 'Active')
+    .sort((a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime())
+    .slice(0, 5);
+
+  // Get recent policies
+  const recentPolicies = [...policies]
+    .sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())
+    .slice(0, 5);
+
   return (
     <DashboardLayout>
       <div className="py-4">

@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BenefitFormData, AuditEntry } from '@/lib/types';
-import { policies } from '@/lib/data/mock-data';
+import { BenefitFormData, Benefit, Policy } from '@/lib/types';
+import { fetchPolicies, createBenefit } from '@/lib/services/apiClient';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 
 export default function NewBenefitPage() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [formData, setFormData] = useState<BenefitFormData>({
     name: '',
     description: '',
@@ -32,6 +33,12 @@ export default function NewBenefitPage() {
   const [newCondition, setNewCondition] = useState('');
   const [newExclusion, setNewExclusion] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchPolicies()
+      .then(setPolicies)
+      .catch(error => console.error('Error loading policies:', error));
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,62 +117,42 @@ export default function NewBenefitPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     setIsSaving(true);
-    
-    // Simulate API call to create benefit
-    setTimeout(() => {
-      // Generate a new ID (would be done by the backend in a real app)
-      const newId = `bnf-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-      
-      // Create audit entry
-      const auditEntry: AuditEntry = {
-        id: `aud-${newId}`,
-        timestamp: new Date().toISOString(),
-        userId: 'user-001', // Mock user ID
-        userName: 'Admin User', // Mock user name
-        action: 'create',
-        entityType: 'benefit',
-        entityId: newId,
-        notes: 'Benefit created via admin interface',
-      };
-      
-      // Create new benefit
-      const newBenefit = {
-        id: newId,
-        name: formData.name,
-        description: formData.description,
-        type: formData.type as 'Death Benefit' | 'Cash Value' | 'Living Benefit' | 'Rider' | 'Other',
-        amount: formData.amount,
-        policyId: formData.policyId,
-        effectiveDate: formData.effectiveDate || undefined,
-        expiryDate: formData.expiryDate || undefined,
-        status: formData.status as 'Active' | 'Pending' | 'Expired' | 'Cancelled' | undefined,
-        conditions: formData.conditions?.length ? formData.conditions : undefined,
-        exclusions: formData.exclusions?.length ? formData.exclusions : undefined,
-        waitingPeriod: formData.waitingPeriod || undefined,
-        eliminationPeriod: formData.eliminationPeriod || undefined,
-        maxBenefitPeriod: formData.maxBenefitPeriod || undefined,
-        benefitFrequency: formData.benefitFrequency as 'One-time' | 'Monthly' | 'Annual' | 'As incurred' | undefined,
-        coinsurance: formData.coinsurance || undefined,
-        deductible: formData.deductible || undefined,
-        maxLifetimeBenefit: formData.maxLifetimeBenefit || undefined,
-        auditTrail: [auditEntry],
-      };
-      
-      // In a real app, we would call an API here
-      console.log('Created benefit:', newBenefit);
-      
-      setIsSaving(false);
-      
-      // Show success message and redirect
+
+    // The POST /api/benefits route creates the audit-trail entry server-side.
+    const payload: Omit<Benefit, 'id'> = {
+      name: formData.name,
+      description: formData.description,
+      type: formData.type as Benefit['type'],
+      amount: formData.amount,
+      policyId: formData.policyId,
+      effectiveDate: formData.effectiveDate || undefined,
+      expiryDate: formData.expiryDate || undefined,
+      status: formData.status as Benefit['status'],
+      conditions: formData.conditions?.length ? formData.conditions : undefined,
+      exclusions: formData.exclusions?.length ? formData.exclusions : undefined,
+      waitingPeriod: formData.waitingPeriod || undefined,
+      eliminationPeriod: formData.eliminationPeriod || undefined,
+      maxBenefitPeriod: formData.maxBenefitPeriod || undefined,
+      benefitFrequency: formData.benefitFrequency as Benefit['benefitFrequency'],
+      coinsurance: formData.coinsurance || undefined,
+      deductible: formData.deductible || undefined,
+      maxLifetimeBenefit: formData.maxLifetimeBenefit || undefined,
+    };
+
+    try {
+      await createBenefit(payload);
       alert('Benefit created successfully!');
       router.push('/benefits');
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating benefit:', error);
+      setIsSaving(false);
+    }
   };
 
   return (

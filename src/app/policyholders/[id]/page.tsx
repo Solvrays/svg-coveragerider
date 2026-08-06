@@ -13,7 +13,7 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getPolicyHolder, getPolicies } from '@/lib/services/mockDataService';
+import { fetchPolicyHolder, fetchPolicies } from '@/lib/services/apiClient';
 import { PolicyHolder, Policy } from '@/lib/types';
 
 export default function PolicyholderDetail() {
@@ -25,12 +25,12 @@ export default function PolicyholderDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Load data from mock service
+  // Load data from the API
   useEffect(() => {
     const loadData = async () => {
       try {
-        const policyholderData = await getPolicyHolder(policyHolderId);
-        const policiesData = await getPolicies();
+        const policyholderData = await fetchPolicyHolder(policyHolderId);
+        const policiesData = await fetchPolicies();
         
         if (policyholderData) {
           setPolicyholder(policyholderData);

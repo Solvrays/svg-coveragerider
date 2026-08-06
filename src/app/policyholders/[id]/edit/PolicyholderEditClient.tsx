@@ -10,15 +10,14 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { PolicyHolder, FieldChange } from '@/lib/types';
-import { getPolicyHolder, updatePolicyHolder } from '@/lib/services/mockDataService';
+import { PolicyHolder } from '@/lib/types';
+import { fetchPolicyHolder, updatePolicyHolder } from '@/lib/services/apiClient';
 
 export default function PolicyholderEditClient({ id }: { id: string }) {
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [originalData, setOriginalData] = useState<Partial<PolicyHolder>>({});
   const [formData, setFormData] = useState<Partial<PolicyHolder>>({
     firstName: '',
     lastName: '',
@@ -52,12 +51,9 @@ export default function PolicyholderEditClient({ id }: { id: string }) {
   useEffect(() => {
     const loadPolicyholder = async () => {
       try {
-        const policyholder = await getPolicyHolder(id);
+        const policyholder = await fetchPolicyHolder(id);
         
         if (policyholder) {
-          // Store original data for comparison when tracking changes
-          setOriginalData({...policyholder});
-          
           setFormData({
             ...policyholder,
             // Ensure address is properly structured
@@ -102,45 +98,16 @@ export default function PolicyholderEditClient({ id }: { id: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Track field changes for audit trail
-    const fieldChanges: FieldChange[] = [];
-    
-    // Compare original and new values for simple fields
-    Object.keys(formData).forEach(key => {
-      if (key !== 'address' && key !== 'auditTrail' && formData[key as keyof PolicyHolder] !== originalData[key as keyof PolicyHolder]) {
-        fieldChanges.push({
-          field: key,
-          oldValue: originalData[key as keyof PolicyHolder],
-          newValue: formData[key as keyof PolicyHolder]
-        });
-      }
-    });
-    
-    // Compare address fields
-    if (formData.address && originalData.address) {
-      Object.keys(formData.address).forEach(key => {
-        if (formData.address && originalData.address && 
-            formData.address[key as keyof typeof formData.address] !== 
-            originalData.address[key as keyof typeof originalData.address]) {
-          fieldChanges.push({
-            field: `address.${key}`,
-            oldValue: originalData.address[key as keyof typeof originalData.address],
-            newValue: formData.address[key as keyof typeof formData.address]
-          });
-        }
-      });
-    }
-    
-    // Update the policyholder with the new data
-    const updatedPolicyholder = {
+
+    // Update the policyholder with the new data. The PUT /api/policyholders/[id]
+    // route computes the audit-trail field diff server-side from the submitted payload.
+    const updatedPolicyholder: Partial<PolicyHolder> = {
       ...formData
-    } as PolicyHolder;
-    
+    };
+
     try {
-      // Save the policyholder with the mock data service
-      await updatePolicyHolder(updatedPolicyholder, fieldChanges);
-      
+      await updatePolicyHolder(id, updatedPolicyholder);
+
       // Redirect back to the policyholder detail page
       router.push(`/policyholders/${id}`);
     } catch {

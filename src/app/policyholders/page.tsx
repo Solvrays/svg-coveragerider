@@ -11,7 +11,7 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getPolicyHolders, getPolicies } from '@/lib/services/mockDataService';
+import { fetchPolicyHolders, fetchPolicies } from '@/lib/services/apiClient';
 import { PolicyHolder, Policy } from '@/lib/types';
 
 export default function PolicyholdersPage() {
@@ -25,12 +25,12 @@ export default function PolicyholdersPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load data from mock service
+  // Load data from the API
   useEffect(() => {
     const loadData = async () => {
       try {
-        const policyHoldersData = await getPolicyHolders();
-        const policiesData = await getPolicies();
+        const policyHoldersData = await fetchPolicyHolders();
+        const policiesData = await fetchPolicies();
         
         setPolicyHolders(policyHoldersData);
         setPolicies(policiesData);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon, 
@@ -11,13 +12,56 @@ import {
   CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policies, policyHolders, beneficiariesData, benefits, policyBreakdowns } from '@/lib/data/mock-data';
+import { policyBreakdowns } from '@/lib/data/mock-data';
+import { fetchPolicy, fetchPolicyHolders, fetchBeneficiaries } from '@/lib/services/apiClient';
+import { Policy, PolicyHolder, Beneficiary } from '@/lib/types';
 
 export default function PolicyDetail() {
   const { id } = useParams();
   const policyId = Array.isArray(id) ? id[0] : id;
-  
-  const policy = policies.find(p => p.id === policyId);
+
+  const [policy, setPolicy] = useState<Policy | null | undefined>(undefined);
+  const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
+  const [policyBeneficiaries, setPolicyBeneficiaries] = useState<Beneficiary[]>([]);
+
+  useEffect(() => {
+    if (!policyId) return;
+
+    const loadData = async () => {
+      try {
+        const policyData = await fetchPolicy(policyId);
+        setPolicy(policyData);
+
+        if (policyData) {
+          const [holdersData, beneficiariesData] = await Promise.all([
+            fetchPolicyHolders(),
+            fetchBeneficiaries(policyData.id),
+          ]);
+          setPolicyHolders(holdersData);
+          setPolicyBeneficiaries(beneficiariesData);
+        }
+      } catch (error) {
+        console.error('Error loading policy:', error);
+        setPolicy(null);
+      }
+    };
+
+    loadData();
+  }, [policyId]);
+
+  if (policy === undefined) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!policy) {
     return (
       <DashboardLayout>
@@ -36,10 +80,8 @@ export default function PolicyDetail() {
     );
   }
 
-  // Get policyholders, beneficiaries, and related data
-  const policyholders = policy.policyholderIds?.map(id => policyHolders.find(ph => ph.id === id)).filter(Boolean) || [];
-  const policyBeneficiaries = beneficiariesData.filter(b => policy.beneficiaryIds?.includes(b.id));
-  const policyBenefits = benefits.filter(b => b.policyId === policy.id);
+  // Get policyholders assigned to this policy
+  const policyholders = policy.policyholderIds?.map(phId => policyHolders.find(ph => ph.id === phId)).filter(Boolean) || [];
   const breakdown = policyBreakdowns.find(pb => pb.policyId === policy.id);
 
   // Format currency

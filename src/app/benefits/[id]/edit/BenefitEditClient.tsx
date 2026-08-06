@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Benefit, BenefitFormData, AuditEntry, FieldChange } from '@/lib/types';
-import { benefits, policies } from '@/lib/data/mock-data';
+import { Benefit, BenefitFormData, Policy } from '@/lib/types';
+import { fetchBenefit, fetchPolicies, updateBenefit } from '@/lib/services/apiClient';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
-import { v4 as uuidv4 } from 'uuid';
 
 // This component receives the ID as a prop instead of accessing params directly
 export default function BenefitEditClient({ id }: { id: string }) {
   const [benefit, setBenefit] = useState<Benefit | null>(null);
-  const [originalBenefit, setOriginalBenefit] = useState<Benefit | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -38,40 +37,47 @@ export default function BenefitEditClient({ id }: { id: string }) {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Simulate API call to fetch benefit data
-    const timer = setTimeout(() => {
-      const foundBenefit = benefits.find(b => b.id === id);
-      
-      if (foundBenefit) {
-        setBenefit(foundBenefit);
-        setOriginalBenefit(JSON.parse(JSON.stringify(foundBenefit)));
-        
-        // Initialize form data
-        setFormData({
-          name: foundBenefit.name,
-          description: foundBenefit.description,
-          type: foundBenefit.type,
-          amount: foundBenefit.amount,
-          policyId: foundBenefit.policyId,
-          effectiveDate: foundBenefit.effectiveDate || '',
-          expiryDate: foundBenefit.expiryDate || '',
-          status: foundBenefit.status || '',
-          conditions: foundBenefit.conditions || [],
-          exclusions: foundBenefit.exclusions || [],
-          waitingPeriod: foundBenefit.waitingPeriod || 0,
-          eliminationPeriod: foundBenefit.eliminationPeriod || 0,
-          maxBenefitPeriod: foundBenefit.maxBenefitPeriod || '',
-          benefitFrequency: foundBenefit.benefitFrequency || '',
-          coinsurance: foundBenefit.coinsurance || 0,
-          deductible: foundBenefit.deductible || 0,
-          maxLifetimeBenefit: foundBenefit.maxLifetimeBenefit || 0,
-        });
-      }
-      
-      setIsLoading(false);
-    }, 800);
+    const loadData = async () => {
+      try {
+        const [foundBenefit, policiesData] = await Promise.all([
+          fetchBenefit(id),
+          fetchPolicies(),
+        ]);
 
-    return () => clearTimeout(timer);
+        setPolicies(policiesData);
+
+        if (foundBenefit) {
+          setBenefit(foundBenefit);
+
+          // Initialize form data
+          setFormData({
+            name: foundBenefit.name,
+            description: foundBenefit.description,
+            type: foundBenefit.type,
+            amount: foundBenefit.amount,
+            policyId: foundBenefit.policyId,
+            effectiveDate: foundBenefit.effectiveDate || '',
+            expiryDate: foundBenefit.expiryDate || '',
+            status: foundBenefit.status || '',
+            conditions: foundBenefit.conditions || [],
+            exclusions: foundBenefit.exclusions || [],
+            waitingPeriod: foundBenefit.waitingPeriod || 0,
+            eliminationPeriod: foundBenefit.eliminationPeriod || 0,
+            maxBenefitPeriod: foundBenefit.maxBenefitPeriod || '',
+            benefitFrequency: foundBenefit.benefitFrequency || '',
+            coinsurance: foundBenefit.coinsurance || 0,
+            deductible: foundBenefit.deductible || 0,
+            maxLifetimeBenefit: foundBenefit.maxLifetimeBenefit || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading benefit:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -151,114 +157,48 @@ export default function BenefitEditClient({ id }: { id: string }) {
     return Object.keys(errors).length === 0;
   };
 
-  const detectChanges = (): FieldChange[] => {
-    if (!originalBenefit) return [];
-    
-    const changes: FieldChange[] = [];
-    
-    // Check simple fields
-    const fieldsToCheck = [
-      'name', 'description', 'type', 'amount', 'policyId', 'effectiveDate', 
-      'expiryDate', 'status', 'waitingPeriod', 'eliminationPeriod', 
-      'maxBenefitPeriod', 'benefitFrequency', 'coinsurance', 'deductible', 'maxLifetimeBenefit'
-    ];
-    
-    fieldsToCheck.forEach(field => {
-      const key = field as keyof Benefit;
-      if (originalBenefit[key] !== formData[field as keyof BenefitFormData]) {
-        changes.push({
-          field,
-          oldValue: originalBenefit[key],
-          newValue: formData[field as keyof BenefitFormData],
-        });
-      }
-    });
-    
-    // Check array fields
-    ['conditions', 'exclusions'].forEach(field => {
-      const key = field as keyof Benefit;
-      const originalArray = originalBenefit[key] as string[] || [];
-      const newArray = formData[field as keyof BenefitFormData] as string[] || [];
-      
-      if (JSON.stringify(originalArray) !== JSON.stringify(newArray)) {
-        changes.push({
-          field,
-          oldValue: originalArray,
-          newValue: newArray,
-        });
-      }
-    });
-    
-    return changes;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm() || !benefit) return;
     
     setIsSaving(true);
-    
-    // Detect what has changed
-    const changes = detectChanges();
-    
-    // Simulate API call to update benefit
-    setTimeout(() => {
-      if (benefit) {
-        // Create audit entry
-        const auditEntry: AuditEntry = {
-          id: uuidv4(),
-          timestamp: new Date().toISOString(),
-          userId: 'user-001', // Mock user ID
-          userName: 'Admin User', // Mock user name
-          action: 'update',
-          entityType: 'benefit',
-          entityId: benefit.id,
-          changes: changes.length > 0 ? changes : undefined,
-          notes: 'Benefit updated via admin interface',
-        };
-        
-        // Update benefit with new data and audit trail
-        const updatedBenefit: Benefit = {
-          ...benefit,
-          name: formData.name,
-          description: formData.description,
-          type: formData.type as 'Death Benefit' | 'Cash Value' | 'Living Benefit' | 'Rider' | 'Other',
-          amount: formData.amount,
-          policyId: formData.policyId,
-          effectiveDate: formData.effectiveDate || undefined,
-          expiryDate: formData.expiryDate || undefined,
-          status: formData.status as 'Active' | 'Pending' | 'Expired' | 'Cancelled' | undefined,
-          conditions: formData.conditions?.length ? formData.conditions : undefined,
-          exclusions: formData.exclusions?.length ? formData.exclusions : undefined,
-          waitingPeriod: formData.waitingPeriod || undefined,
-          eliminationPeriod: formData.eliminationPeriod || undefined,
-          maxBenefitPeriod: formData.maxBenefitPeriod || undefined,
-          benefitFrequency: formData.benefitFrequency as 'One-time' | 'Monthly' | 'Annual' | 'As incurred' | undefined,
-          coinsurance: formData.coinsurance || undefined,
-          deductible: formData.deductible || undefined,
-          maxLifetimeBenefit: formData.maxLifetimeBenefit || undefined,
-          auditTrail: [...(benefit.auditTrail || []), auditEntry],
-        };
-        
-        // In a real app, we would call an API here
-        console.log('Updated benefit:', updatedBenefit);
-        
-        // Update the local state to show the changes
-        setBenefit(updatedBenefit);
-        setOriginalBenefit(JSON.parse(JSON.stringify(updatedBenefit)));
-      }
-      
-      setIsSaving(false);
-      
-      // Show success message with styled modal instead of alert
+
+    // The PUT /api/benefits/[id] route computes the audit-trail field diff
+    // server-side from the submitted payload.
+    const payload: Partial<Benefit> = {
+      name: formData.name,
+      description: formData.description,
+      type: formData.type as Benefit['type'],
+      amount: formData.amount,
+      policyId: formData.policyId,
+      effectiveDate: formData.effectiveDate || undefined,
+      expiryDate: formData.expiryDate || undefined,
+      status: formData.status as Benefit['status'],
+      conditions: formData.conditions?.length ? formData.conditions : undefined,
+      exclusions: formData.exclusions?.length ? formData.exclusions : undefined,
+      waitingPeriod: formData.waitingPeriod || undefined,
+      eliminationPeriod: formData.eliminationPeriod || undefined,
+      maxBenefitPeriod: formData.maxBenefitPeriod || undefined,
+      benefitFrequency: formData.benefitFrequency as Benefit['benefitFrequency'],
+      coinsurance: formData.coinsurance || undefined,
+      deductible: formData.deductible || undefined,
+      maxLifetimeBenefit: formData.maxLifetimeBenefit || undefined,
+    };
+
+    try {
+      const updatedBenefit = await updateBenefit(benefit.id, payload);
+      setBenefit(updatedBenefit);
+
       setShowSuccessModal(true);
-      
-      // Auto-hide after 3 seconds
       setTimeout(() => {
         setShowSuccessModal(false);
       }, 3000);
-    }, 1000);
+    } catch (error) {
+      console.error('Error updating benefit:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatDate = (dateString: string) => {

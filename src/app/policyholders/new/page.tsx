@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { createPolicyHolder } from '@/lib/services/apiClient';
+import { PolicyHolder } from '@/lib/types';
 
 export default function NewPolicyholderPage() {
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -58,13 +61,26 @@ export default function NewPolicyholderPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, this would send data to an API
-    console.log('Form submitted:', formData);
-    
-    // Redirect to policyholders list
-    router.push('/policyholders');
+    setIsSaving(true);
+
+    const payload: Omit<PolicyHolder, 'id'> = {
+      ...formData,
+      gender: (formData.gender || undefined) as PolicyHolder['gender'],
+      maritalStatus: (formData.maritalStatus || undefined) as PolicyHolder['maritalStatus'],
+      riskClass: (formData.riskClass || undefined) as PolicyHolder['riskClass'],
+      smokerStatus: (formData.smokerStatus || undefined) as PolicyHolder['smokerStatus'],
+      policies: [],
+    };
+
+    try {
+      await createPolicyHolder(payload);
+      router.push('/policyholders');
+    } catch (error) {
+      console.error('Error creating policyholder:', error);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -505,9 +521,10 @@ export default function NewPolicyholderPage() {
             <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
               <button
                 type="submit"
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={isSaving}
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Policyholder
+                {isSaving ? 'Creating...' : 'Create Policyholder'}
               </button>
             </div>
           </form>

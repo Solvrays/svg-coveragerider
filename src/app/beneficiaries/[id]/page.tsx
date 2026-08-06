@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon, 
@@ -10,13 +11,50 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { beneficiariesData, policies } from '@/lib/data/mock-data';
+import { fetchBeneficiary, fetchPolicy } from '@/lib/services/apiClient';
+import { Beneficiary, Policy } from '@/lib/types';
 
 export default function BeneficiaryDetail() {
   const { id } = useParams();
   const beneficiaryId = Array.isArray(id) ? id[0] : id;
-  
-  const beneficiary = beneficiariesData.find(b => b.id === beneficiaryId);
+
+  const [beneficiary, setBeneficiary] = useState<Beneficiary | null | undefined>(undefined);
+  const [policy, setPolicy] = useState<Policy | null>(null);
+
+  useEffect(() => {
+    if (!beneficiaryId) return;
+
+    const loadData = async () => {
+      try {
+        const beneficiaryData = await fetchBeneficiary(beneficiaryId);
+        setBeneficiary(beneficiaryData);
+
+        if (beneficiaryData) {
+          const policyData = await fetchPolicy(beneficiaryData.policyId);
+          setPolicy(policyData);
+        }
+      } catch (error) {
+        console.error('Error loading beneficiary:', error);
+        setBeneficiary(null);
+      }
+    };
+
+    loadData();
+  }, [beneficiaryId]);
+
+  if (beneficiary === undefined) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!beneficiary) {
     return (
       <DashboardLayout>
@@ -35,7 +73,6 @@ export default function BeneficiaryDetail() {
     );
   }
 
-  const policy = policies.find(p => p.id === beneficiary.policyId);
   const hasAuditTrail = beneficiary.auditTrail && beneficiary.auditTrail.length > 0;
 
   return (

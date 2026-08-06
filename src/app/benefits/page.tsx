@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Benefit } from '@/lib/types';
-import { benefits } from '@/lib/data/mock-data';
+import { fetchBenefits } from '@/lib/services/apiClient';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function BenefitsPage() {
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -24,12 +25,18 @@ export default function BenefitsPage() {
   });
 
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    const loadBenefits = async () => {
+      try {
+        const data = await fetchBenefits();
+        setBenefits(data);
+      } catch (error) {
+        console.error('Error loading benefits:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    loadBenefits();
   }, []);
 
   useEffect(() => {
@@ -89,7 +96,7 @@ export default function BenefitsPage() {
     });
 
     setFilteredBenefits(result);
-  }, [searchTerm, typeFilter, statusFilter, sortField, sortDirection]);
+  }, [benefits, searchTerm, typeFilter, statusFilter, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {

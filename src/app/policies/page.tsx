@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   MagnifyingGlassIcon, 
@@ -9,14 +9,37 @@ import {
   ArrowDownIcon 
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policies, policyHolders } from '@/lib/data/mock-data';
+import { fetchPolicies, fetchPolicyHolders } from '@/lib/services/apiClient';
+import { Policy, PolicyHolder } from '@/lib/types';
 
 export default function PoliciesPage() {
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [sortField, setSortField] = useState('policyNumber');
   const [sortDirection, setSortDirection] = useState('asc');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [policiesData, policyHoldersData] = await Promise.all([
+          fetchPolicies(),
+          fetchPolicyHolders(),
+        ]);
+        setPolicies(policiesData);
+        setPolicyHolders(policyHoldersData);
+      } catch (error) {
+        console.error('Error loading policies:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // Get unique policy types and statuses for filters
   const policyTypes = ['All', ...new Set(policies.map(policy => policy.policyType))];
@@ -114,6 +137,19 @@ export default function PoliciesPage() {
       minimumFractionDigits: 2
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

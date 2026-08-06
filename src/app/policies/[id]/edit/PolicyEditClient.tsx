@@ -11,16 +11,14 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policyHolders, beneficiariesData } from '@/lib/data/mock-data';
-import { Policy, FieldChange } from '@/lib/types';
-import { getPolicy, updatePolicy } from '@/lib/services/mockDataService';
+import { Policy, PolicyHolder, Beneficiary } from '@/lib/types';
+import { fetchPolicy, updatePolicy, fetchPolicyHolders, fetchBeneficiaries } from '@/lib/services/apiClient';
 
 export default function PolicyEditClient({ id }: { id: string }) {
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [originalData, setOriginalData] = useState<Partial<Policy>>({});
   const [formData, setFormData] = useState<Partial<Policy>>({
     policyNumber: '',
     policyType: 'Term Life',
@@ -40,19 +38,23 @@ export default function PolicyEditClient({ id }: { id: string }) {
 
   const [selectedPolicyholders, setSelectedPolicyholders] = useState<string[]>([]);
   const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<string[]>([]);
-  const [availablePolicyholders] = useState(policyHolders);
-  const [availableBeneficiaries] = useState(beneficiariesData);
+  const [availablePolicyholders, setAvailablePolicyholders] = useState<PolicyHolder[]>([]);
+  const [availableBeneficiaries, setAvailableBeneficiaries] = useState<Beneficiary[]>([]);
 
   // Load policy data
   useEffect(() => {
     const loadPolicy = async () => {
       try {
-        const policy = await getPolicy(id);
-        
+        const [policy, policyHoldersData, beneficiariesData] = await Promise.all([
+          fetchPolicy(id),
+          fetchPolicyHolders(),
+          fetchBeneficiaries(),
+        ]);
+
+        setAvailablePolicyholders(policyHoldersData);
+        setAvailableBeneficiaries(beneficiariesData);
+
         if (policy) {
-          // Store original data for comparison when tracking changes
-          setOriginalData({...policy});
-          
           setFormData({
             ...policy,
           });
@@ -121,51 +123,18 @@ export default function PolicyEditClient({ id }: { id: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Track field changes for audit trail
-    const fieldChanges: FieldChange[] = [];
-    
-    // Compare original and new values for simple fields
-    Object.keys(formData).forEach(key => {
-      if (key !== 'policyholderIds' && key !== 'beneficiaryIds' && key !== 'auditTrail' && 
-          formData[key as keyof Policy] !== originalData[key as keyof Policy]) {
-        fieldChanges.push({
-          field: key,
-          oldValue: originalData[key as keyof Policy],
-          newValue: formData[key as keyof Policy]
-        });
-      }
-    });
-    
-    // Compare policyholders
-    if (JSON.stringify(selectedPolicyholders) !== JSON.stringify(originalData.policyholderIds)) {
-      fieldChanges.push({
-        field: 'policyholderIds',
-        oldValue: originalData.policyholderIds,
-        newValue: selectedPolicyholders
-      });
-    }
-    
-    // Compare beneficiaries
-    if (JSON.stringify(selectedBeneficiaries) !== JSON.stringify(originalData.beneficiaryIds)) {
-      fieldChanges.push({
-        field: 'beneficiaryIds',
-        oldValue: originalData.beneficiaryIds,
-        newValue: selectedBeneficiaries
-      });
-    }
-    
-    // Update the policy with the new data
-    const updatedPolicy: Policy = {
-      ...formData as Policy,
+
+    // Update the policy with the new data. The PUT /api/policies/[id] route
+    // computes the audit-trail field diff server-side from the submitted payload.
+    const updatedPolicy: Partial<Policy> = {
+      ...formData,
       policyholderIds: selectedPolicyholders,
       beneficiaryIds: selectedBeneficiaries
     };
-    
+
     try {
-      // Save the policy with the mock data service
-      await updatePolicy(updatedPolicy, fieldChanges);
-      
+      await updatePolicy(id, updatedPolicy);
+
       // Redirect back to the policy detail page
       router.push(`/policies/${id}`);
     } catch (err) {

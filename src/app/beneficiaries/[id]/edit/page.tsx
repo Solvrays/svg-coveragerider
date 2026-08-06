@@ -8,8 +8,8 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { beneficiariesData, policies, users } from '@/lib/data/mock-data';
-import { Address, AuditEntry, FieldChange } from '@/lib/types';
+import { fetchBeneficiary, fetchPolicies, createBeneficiary, updateBeneficiary } from '@/lib/services/apiClient';
+import { Address, Policy } from '@/lib/types';
 
 // Define the BeneficiaryFormData interface
 interface BeneficiaryFormData {
@@ -23,90 +23,6 @@ interface BeneficiaryFormData {
   percentage: number;
   address: Address;
 }
-
-// Create a mock function to simulate updating the beneficiary data
-// In a real app, this would be an API call
-const updateBeneficiaryMock = (
-  beneficiaryId: string, 
-  formData: BeneficiaryFormData, 
-  auditEntry: AuditEntry
-): Promise<boolean> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Find the beneficiary in the mock data
-      const index = beneficiariesData.findIndex(b => b.id === beneficiaryId);
-      
-      if (index !== -1) {
-        // Update the beneficiary data
-        beneficiariesData[index] = {
-          ...beneficiariesData[index],
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          relationship: formData.relationship,
-          dateOfBirth: formData.dateOfBirth,
-          ssn: formData.ssn,
-          email: formData.email,
-          phone: formData.phone,
-          percentage: formData.percentage,
-          address: formData.address,
-        };
-        
-        // Add the audit entry
-        if (!beneficiariesData[index].auditTrail) {
-          beneficiariesData[index].auditTrail = [];
-        }
-        
-        beneficiariesData[index].auditTrail!.push(auditEntry);
-        
-        // Log the updated data to console for debugging
-        console.log('Updated beneficiary data:', beneficiariesData[index]);
-        
-        resolve(true);
-      } else {
-        console.error('Beneficiary not found:', beneficiaryId);
-        resolve(false);
-      }
-    }, 800); // Simulate network delay
-  });
-};
-
-// Create a mock function to simulate creating a new beneficiary
-const createBeneficiaryMock = (
-  formData: BeneficiaryFormData,
-  policyId: string,
-  auditEntry: AuditEntry
-): Promise<string> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Create a new ID
-      const newId = `ben-${Date.now()}`;
-      
-      // Create the new beneficiary
-      const newBeneficiary = {
-        id: newId,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        relationship: formData.relationship,
-        dateOfBirth: formData.dateOfBirth,
-        ssn: formData.ssn,
-        email: formData.email,
-        phone: formData.phone,
-        percentage: formData.percentage,
-        address: formData.address,
-        policyId: policyId,
-        auditTrail: [auditEntry]
-      };
-      
-      // Add to the mock data
-      beneficiariesData.push(newBeneficiary);
-      
-      // Log the new data to console for debugging
-      console.log('Created new beneficiary:', newBeneficiary);
-      
-      resolve(newId);
-    }, 800); // Simulate network delay
-  });
-};
 
 export default function EditBeneficiary() {
   const router = useRouter();
@@ -136,49 +52,52 @@ export default function EditBeneficiary() {
   const [auditNote, setAuditNote] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [originalData, setOriginalData] = useState<BeneficiaryFormData | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Load existing beneficiary data if editing
+  // Load available policies for the policy dropdown, and the existing
+  // beneficiary data if editing.
   useEffect(() => {
-    if (!isNewBeneficiary) {
+    const loadData = async () => {
       setIsLoading(true);
-      // Simulate API call with a short timeout
-      setTimeout(() => {
-        const beneficiary = beneficiariesData.find(b => b.id === beneficiaryId);
-        if (beneficiary) {
-          console.log("Found beneficiary data:", beneficiary);
-          const formattedData: BeneficiaryFormData = {
-            firstName: beneficiary.firstName,
-            lastName: beneficiary.lastName,
-            relationship: beneficiary.relationship,
-            dateOfBirth: beneficiary.dateOfBirth,
-            ssn: beneficiary.ssn,
-            email: beneficiary.email || '',
-            phone: beneficiary.phone || '',
-            percentage: beneficiary.percentage,
-            address: beneficiary.address || {
-              street: '',
-              city: '',
-              state: '',
-              zipCode: '',
-              country: 'USA'
-            }
-          };
-          
-          console.log("Setting form data:", formattedData);
-          setFormData(formattedData);
-          setOriginalData(formattedData);
-          setSelectedPolicyId(beneficiary.policyId);
-        } else {
-          console.error("Beneficiary not found with ID:", beneficiaryId);
+      try {
+        const policiesData = await fetchPolicies();
+        setPolicies(policiesData);
+
+        if (!isNewBeneficiary && beneficiaryId) {
+          const beneficiary = await fetchBeneficiary(beneficiaryId);
+          if (beneficiary) {
+            setFormData({
+              firstName: beneficiary.firstName,
+              lastName: beneficiary.lastName,
+              relationship: beneficiary.relationship,
+              dateOfBirth: beneficiary.dateOfBirth,
+              ssn: beneficiary.ssn,
+              email: beneficiary.email || '',
+              phone: beneficiary.phone || '',
+              percentage: beneficiary.percentage,
+              address: beneficiary.address || {
+                street: '',
+                city: '',
+                state: '',
+                zipCode: '',
+                country: 'USA'
+              }
+            });
+            setSelectedPolicyId(beneficiary.policyId);
+          } else {
+            console.error("Beneficiary not found with ID:", beneficiaryId);
+          }
         }
+      } catch (error) {
+        console.error('Error loading beneficiary edit data:', error);
+      } finally {
         setIsLoading(false);
-      }, 300);
-    } else {
-      setIsLoading(false);
-    }
+      }
+    };
+
+    loadData();
   }, [beneficiaryId, isNewBeneficiary]);
 
   const validateForm = (): boolean => {
@@ -229,55 +148,6 @@ export default function EditBeneficiary() {
     }
   };
 
-  const generateAuditTrail = (): AuditEntry => {
-    const currentUser = users[0]; // Using admin user for this example
-    const changes: FieldChange[] = [];
-    
-    if (!isNewBeneficiary && originalData) {
-      // Compare each field to find changes
-      Object.keys(formData).forEach(key => {
-        const fieldKey = key as keyof BeneficiaryFormData;
-        const oldValue = originalData[fieldKey];
-        const newValue = formData[fieldKey];
-        
-        if (fieldKey === 'address' && typeof oldValue === 'object' && typeof newValue === 'object') {
-          // Handle address object
-          const oldAddress = oldValue as Address;
-          const newAddress = newValue as Address;
-          
-          Object.keys(oldAddress).forEach(addressKey => {
-            const addrKey = addressKey as keyof Address;
-            if (oldAddress[addrKey] !== newAddress[addrKey]) {
-              changes.push({
-                field: `address.${addressKey}`,
-                oldValue: String(oldAddress[addrKey]),
-                newValue: String(newAddress[addrKey])
-              });
-            }
-          });
-        } else if (oldValue !== newValue) {
-          changes.push({
-            field: key,
-            oldValue: String(oldValue),
-            newValue: String(newValue)
-          });
-        }
-      });
-    }
-    
-    return {
-      id: `audit-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      action: isNewBeneficiary ? 'create' : 'update',
-      entityType: 'beneficiary',
-      entityId: isNewBeneficiary ? `ben-new-${Date.now()}` : (beneficiaryId as string),
-      changes: isNewBeneficiary ? undefined : changes,
-      notes: auditNote || undefined
-    };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -285,24 +155,23 @@ export default function EditBeneficiary() {
     
     setIsSubmitting(true);
     setSaveSuccess(false);
-    
+
+    // The API's create/update routes generate the audit trail entry
+    // server-side (including the field diff for updates).
     try {
-      const auditEntry = generateAuditTrail();
-      console.log('Saving beneficiary with audit trail:', auditEntry);
-      
       if (isNewBeneficiary) {
         // Create new beneficiary
-        const newId = await createBeneficiaryMock(formData, selectedPolicyId, auditEntry);
+        const created = await createBeneficiary({ ...formData, policyId: selectedPolicyId });
         setSaveSuccess(true);
         
         // Show success message briefly before redirecting
         setTimeout(() => {
-          router.push(`/beneficiaries/${newId}`);
+          router.push(`/beneficiaries/${created.id}`);
         }, 1500);
       } else {
         // Update existing beneficiary
-        const success = await updateBeneficiaryMock(beneficiaryId, formData, auditEntry);
-        setSaveSuccess(success);
+        await updateBeneficiary(beneficiaryId as string, { ...formData, policyId: selectedPolicyId });
+        setSaveSuccess(true);
         
         // Show success message briefly before redirecting
         setTimeout(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { 
   MagnifyingGlassIcon, 
@@ -10,7 +10,8 @@ import {
   PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { beneficiariesData, policies } from '@/lib/data/mock-data';
+import { fetchBeneficiaries, fetchPolicies } from '@/lib/services/apiClient';
+import { Beneficiary, Policy } from '@/lib/types';
 import { useSearchParams } from 'next/navigation';
 
 // Loading component for Suspense fallback
@@ -31,10 +32,36 @@ function BeneficiariesContent() {
   const searchParams = useSearchParams();
   const policyIdParam = searchParams.get('policyId');
   
+  const [beneficiariesData, setBeneficiariesData] = useState<Beneficiary[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRelationship, setFilterRelationship] = useState('All');
   const [sortField, setSortField] = useState('lastName');
   const [sortDirection, setSortDirection] = useState('asc');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [beneficiariesResult, policiesResult] = await Promise.all([
+          fetchBeneficiaries(),
+          fetchPolicies(),
+        ]);
+        setBeneficiariesData(beneficiariesResult);
+        setPolicies(policiesResult);
+      } catch (error) {
+        console.error('Error loading beneficiaries:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return <BeneficiariesLoading />;
+  }
 
   // Filter beneficiaries
   const filteredBeneficiaries = beneficiariesData.filter(beneficiary => {
