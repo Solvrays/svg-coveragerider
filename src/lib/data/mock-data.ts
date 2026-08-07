@@ -1,4 +1,4 @@
-import { PolicyHolder, Policy, Beneficiary, Benefit, PolicyBreakdown, AuditEntry } from '../types';
+import { PolicyHolder, Policy, Beneficiary, Benefit, PolicyBreakdown, AuditEntry, PolicyLoan, CarrierProfile, Signatory } from '../types';
 
 export const policyHolders: PolicyHolder[] = [
   {
@@ -1101,3 +1101,67 @@ const beneficiariesWithAudit = beneficiaries.map(beneficiary => {
 });
 
 export const beneficiariesData = beneficiariesWithAudit;
+
+// ── Policy Loans ─────────────────────────────────────────────────────────
+// Seed data reflects the approved policy-loan letter issued for pol-001
+// (John Doe, LFP-12345678) so the PulseGene "Policy Loan Approval" workflow
+// has a real record to pull instead of a hardcoded payload.
+export const policyLoans: PolicyLoan[] = [
+  {
+    id: 'loan-001',
+    policyId: 'pol-001',
+    policyNumber: 'LFP-12345678',
+    approvalNumber: 'PLA-2026-007541',
+    status: 'Partially Approved',
+    requestDate: '2026-07-17',
+    effectiveDate: '2026-07-21',
+    requestedAmount: 13500.00,
+    approvedAmount: 12000.00,
+    cashValueReviewed: 15000.00,
+    annualInterestRate: 5.25,
+    interestMethod: 'Fixed; simple interest projection',
+    repaymentTerms: 'Flexible; payable at any time',
+    disbursementMethod: 'ACH to account ending in 4821',
+    disbursementTiming: 'within 2–3 business days',
+    nextStepMessage: 'No additional action is required unless we contact you.',
+    notes: 'Approved amount limited to net available loan capacity after minimum reserve.',
+    auditTrail: [
+      {
+        id: 'aud-loan-001',
+        timestamp: '2026-07-21T09:00:00Z',
+        userId: 'user-001',
+        userName: 'Admin User',
+        action: 'create',
+        entityType: 'policyLoan',
+        entityId: 'loan-001',
+        notes: 'Policy loan approved and letter issued'
+      }
+    ]
+  }
+];
+
+// ── Carrier profile + signatory ─────────────────────────────────────────
+// Single-record demo config used to populate the letter's `carrier` and
+// `signatory` template namespaces. Not tied to any one policy.
+export const carrierProfile: CarrierProfile = {
+  name: 'HarborStone Life',
+  tagline: 'Protection for every chapter',
+  phone: '(800) 555-0198',
+  website: 'www.harborstonelife.com',
+  addressLine1: '200 Summit Park Drive',
+  cityStateZip: 'Raleigh, NC 27601',
+  serviceEmail: 'policyservices@harborstonelife.com',
+  servicePhone: '(800) 555-0198',
+  logo: {
+    url: 'https://res.cloudinary.com/dqql2wlbt/image/upload/v1784294652/logoCrop_xfavit.png',
+    width: '0.35in',
+    height: '0.5in'
+  }
+};
+
+export const signatory: Signatory = {
+  name: 'Alexandra Morgan',
+  title: 'Director, Policyholder Services',
+  department: 'Policy Administration',
+  signature: 'https://res.cloudinary.com/dqql2wlbt/image/upload/v1784127566/signature_mlo82t.png'
+};

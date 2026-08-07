@@ -213,7 +213,7 @@ export interface AuditEntry {
   userId: string;
   userName: string;
   action: 'create' | 'update' | 'delete';
-  entityType: 'beneficiary' | 'policy' | 'policyholder' | 'benefit';
+  entityType: 'beneficiary' | 'policy' | 'policyholder' | 'benefit' | 'policyLoan';
   entityId: string;
   changes?: FieldChange[];
   notes?: string;
@@ -285,4 +285,76 @@ export interface SurrenderFormData {
   reason: string;
   paymentMethod: PaymentMethod;
   bankAccountLast4?: string;
+}
+
+// ── Policy Loan (loan-against-cash-value) types ─────────────────────────────
+// These mirror the fields the "Policy Loan Approval" DocuGene template reads
+// from the `loanApproval` namespace. The template's `loanCalculation`
+// namespace (interest projections, decision, utilization, etc.) is produced
+// by the external CalcGene Excel engine and is intentionally NOT modeled
+// here — PAS only owns the request/approval facts, not the calculation.
+export type PolicyLoanStatus = 'Pending' | 'Approved' | 'Partially Approved' | 'Rejected' | 'Disbursed';
+
+export interface PolicyLoan {
+  id: string;
+  policyId: string;
+  policyNumber: string;
+  approvalNumber: string;
+  status: PolicyLoanStatus;
+  requestDate: string;
+  effectiveDate: string;
+  requestedAmount: number;
+  approvedAmount: number;
+  cashValueReviewed: number;
+  annualInterestRate: number; // percentage, e.g. 5.25 for 5.25%
+  interestMethod: string;
+  repaymentTerms: string;
+  disbursementMethod: string;
+  disbursementTiming: string;
+  nextStepMessage?: string;
+  notes?: string;
+  auditTrail?: AuditEntry[];
+}
+
+export interface PolicyLoanFormData {
+  policyId: string;
+  approvalNumber: string;
+  status: PolicyLoanStatus;
+  requestDate: string;
+  effectiveDate: string;
+  requestedAmount: number;
+  approvedAmount: number;
+  cashValueReviewed: number;
+  annualInterestRate: number;
+  interestMethod: string;
+  repaymentTerms: string;
+  disbursementMethod: string;
+  disbursementTiming: string;
+  nextStepMessage?: string;
+  notes?: string;
+}
+
+// Carrier branding + signatory used to populate the letter's `carrier` and
+// `signatory` namespaces. Single-record "profile" for this demo instance.
+export interface CarrierProfile {
+  name: string;
+  tagline?: string;
+  phone: string;
+  website: string;
+  addressLine1: string;
+  cityStateZip: string;
+  serviceEmail: string;
+  servicePhone: string;
+  logo?: {
+    url: string;
+    width?: string;
+    height?: string;
+  };
+}
+
+export interface Signatory {
+  name: string;
+  title: string;
+  department: string;
+  signature?: string;
 }

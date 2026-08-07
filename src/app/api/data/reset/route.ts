@@ -4,6 +4,7 @@ import {
   policyHoldersPersistence, 
   beneficiariesPersistence,
   benefitsPersistence,
+  policyLoansPersistence,
   auditEntriesPersistence
 } from '@/lib/services/persistence';
 
@@ -13,6 +14,7 @@ export async function POST() {
     policyHoldersPersistence.resetAllRecords();
     beneficiariesPersistence.resetAllRecords();
     benefitsPersistence.resetAllRecords();
+    policyLoansPersistence.resetAllRecords();
     auditEntriesPersistence.resetAllRecords();
     
     return NextResponse.json({

@@ -1,4 +1,4 @@
-import { Policy, PolicyHolder, Beneficiary, Benefit } from '@/lib/types';
+import { Policy, PolicyHolder, Beneficiary, Benefit, PolicyLoan, CarrierProfile, Signatory } from '@/lib/types';
 
 // Central fetch-based client for the app's own /api/* routes.
 // Every list/detail/edit page should go through here instead of importing
@@ -153,4 +153,82 @@ export async function updateBenefit(id: string, payload: Partial<Benefit>): Prom
 
 export async function deleteBenefit(id: string): Promise<void> {
   await request<{ success: boolean }>(`/benefits/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+// ── Policy Loans ────────────────────────────────────────────────────────────
+
+export async function fetchPolicyLoans(policyId?: string): Promise<PolicyLoan[]> {
+  const query = policyId ? `?policyId=${encodeURIComponent(policyId)}` : '';
+  const { data } = await request<{ data: PolicyLoan[] }>(`/policy-loans${query}`);
+  return data;
+}
+
+export async function fetchPolicyLoan(id: string): Promise<PolicyLoan | null> {
+  try {
+    const { data } = await request<{ data: PolicyLoan }>(`/policy-loans/${encodeURIComponent(id)}`);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function createPolicyLoan(payload: Omit<PolicyLoan, 'id'>): Promise<PolicyLoan> {
+  const { data } = await request<{ data: PolicyLoan }>('/policy-loans', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return data;
+}
+
+export async function updatePolicyLoan(id: string, payload: Partial<PolicyLoan>): Promise<PolicyLoan> {
+  const { data } = await request<{ data: PolicyLoan }>(`/policy-loans/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return data;
+}
+
+// Combined package used by the PulseGene "Policy Loan Approval" letter
+// workflow: policy (with policyholders expanded) + carrier + signatory +
+// the latest loan's approval facts.
+export interface PolicyLoanLetterData {
+  data: {
+    id: string;
+    status: Policy['status'];
+    cashValue?: number;
+    issueDate: string;
+    faceAmount: number;
+    policyType: Policy['policyType'];
+    policyNumber: string;
+    effectiveDate: string;
+    policyholders: Pick<PolicyHolder, 'id' | 'email' | 'phone' | 'address' | 'lastName' | 'firstName'>[];
+  };
+  carrier: CarrierProfile;
+  signatory: Signatory;
+  loanApproval: {
+    amount: string;
+    cashValue: string;
+    requestDate: string;
+    interestRate: string;
+    effectiveDate: string;
+    approvalNumber: string;
+    interestMethod: string;
+    repaymentTerms: string;
+    nextStepMessage?: string;
+    disbursementMethod: string;
+    disbursementTiming: string;
+  } | null;
+  correspondence: {
+    letterDate: string;
+  };
+}
+
+export async function fetchPolicyLoanLetterData(policyId: string): Promise<PolicyLoanLetterData> {
+  return request<PolicyLoanLetterData>(`/policies/${encodeURIComponent(policyId)}/loan-letter-data`);
+}
+
+// ── Carrier config ──────────────────────────────────────────────────────────
+
+export async function fetchCarrierConfig(): Promise<{ carrier: CarrierProfile; signatory: Signatory }> {
+  return request<{ carrier: CarrierProfile; signatory: Signatory }>('/carrier-config');
 }

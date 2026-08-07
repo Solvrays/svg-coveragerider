@@ -10,14 +10,18 @@ import {
   SurrenderRequest,
   SurrenderType,
   SurrenderRequestStatus,
-  PaymentMethod
+  PaymentMethod,
+  PolicyLoan
 } from '@/lib/types';
 import { 
   policies as initialPolicies, 
   policyHolders as initialPolicyHolders, 
   beneficiariesData as initialBeneficiaries,
   benefits as initialBenefits,
-  auditEntries as initialAuditEntries
+  auditEntries as initialAuditEntries,
+  policyLoans as initialPolicyLoans,
+  carrierProfile,
+  signatory as signatoryProfile
 } from '@/lib/data/mock-data';
 
 // In-memory storage for mock data
@@ -26,6 +30,7 @@ let policyHolders = [...initialPolicyHolders];
 let beneficiaries = [...initialBeneficiaries];
 let benefits = [...initialBenefits];
 let auditEntries = [...(initialAuditEntries || [])];
+let policyLoans = [...(initialPolicyLoans || [])];
 let dataInitialized = false;
 
 // Function to reload data from persistence (called from server-side API routes)
@@ -61,6 +66,7 @@ const ensureDataLoaded = () => {
       beneficiaries = loadFromFile<Beneficiary>('beneficiaries.json', initialBeneficiaries);
       benefits = loadFromFile<Benefit>('benefits.json', initialBenefits);
       auditEntries = loadFromFile<AuditEntry>('auditEntries.json', initialAuditEntries || []);
+      policyLoans = loadFromFile<PolicyLoan>('policyLoans.json', initialPolicyLoans || []);
       dataInitialized = true;
     } catch {
       // Ignore errors - use initial data
@@ -84,7 +90,7 @@ const generateId = (prefix: string) => {
 // Create audit entry
 const createAuditEntry = (
   action: 'create' | 'update' | 'delete',
-  entityType: 'policy' | 'policyholder' | 'beneficiary' | 'benefit',
+  entityType: 'policy' | 'policyholder' | 'beneficiary' | 'benefit' | 'policyLoan',
   entityId: string,
   changes?: FieldChange[],
   notes?: string
@@ -322,7 +328,7 @@ export const getAuditEntriesByEntityId = (entityId: string) => {
   return auditEntries.filter(ae => ae.entityId === entityId);
 };
 
-export const getAuditEntriesByEntityType = (entityType: 'policy' | 'policyholder' | 'beneficiary' | 'benefit') => {
+export const getAuditEntriesByEntityType = (entityType: 'policy' | 'policyholder' | 'beneficiary' | 'benefit' | 'policyLoan') => {
   return auditEntries.filter(ae => ae.entityType === entityType);
 };
 
@@ -332,6 +338,7 @@ export const resetMockData = () => {
   policyHolders = [...initialPolicyHolders];
   beneficiaries = [...initialBeneficiaries];
   benefits = [...initialBenefits];
+  policyLoans = [...(initialPolicyLoans || [])];
   auditEntries = [...initialAuditEntries || []];
 };
 
@@ -401,6 +408,134 @@ export const deleteBenefit = (id: string): boolean => {
   if (index === -1) return false;
   benefits.splice(index, 1);
   return true;
+};
+
+// Policy Loan methods
+export const getPolicyLoans = () => {
+  ensureDataLoaded();
+  return [...policyLoans];
+};
+
+export const getPolicyLoan = (id: string) => {
+  ensureDataLoaded();
+  return policyLoans.find(l => l.id === id);
+};
+
+export const getPolicyLoansByPolicyId = (policyId: string) => {
+  ensureDataLoaded();
+  return policyLoans.filter(l => l.policyId === policyId);
+};
+
+export const createPolicyLoan = (newLoan: Omit<PolicyLoan, 'id'>) => {
+  const loan = {
+    ...newLoan,
+    id: generateId('loan')
+  } as PolicyLoan;
+
+  const auditEntry = createAuditEntry(
+    'create',
+    'policyLoan',
+    loan.id,
+    undefined,
+    `Policy loan created on ${new Date().toLocaleString()}`
+  );
+
+  loan.auditTrail = [auditEntry];
+  policyLoans.push(loan);
+  auditEntries.push(auditEntry);
+  return loan;
+};
+
+export const updatePolicyLoan = (updatedLoan: PolicyLoan, changes: FieldChange[]) => {
+  const auditEntry = createAuditEntry(
+    'update',
+    'policyLoan',
+    updatedLoan.id,
+    changes,
+    `Policy loan updated on ${new Date().toLocaleString()}`
+  );
+
+  const loanWithAudit = {
+    ...updatedLoan,
+    auditTrail: [
+      ...(updatedLoan.auditTrail || []),
+      auditEntry
+    ]
+  };
+
+  policyLoans = policyLoans.map(l =>
+    l.id === loanWithAudit.id ? loanWithAudit : l
+  );
+
+  auditEntries.push(auditEntry);
+  return loanWithAudit;
+};
+
+// Combined package for letter-generation orchestration (e.g. PulseGene).
+// Returns the policy (with policyholders expanded), carrier profile,
+// signatory, and the most recent loan record's approval facts — everything
+// the "Policy Loan Approval" DocuGene template needs except the
+// `loanCalculation` namespace, which is computed by the external CalcGene
+// Excel engine.
+export const getPolicyLoanLetterData = (policyId: string) => {
+  ensureDataLoaded();
+
+  const policy = policies.find(p => p.id === policyId);
+  if (!policy) return null;
+
+  const expandedPolicyholders = (policy.policyholderIds || [])
+    .map(id => policyHolders.find(ph => ph.id === id))
+    .filter((ph): ph is PolicyHolder => Boolean(ph));
+
+  const loansForPolicy = policyLoans
+    .filter(l => l.policyId === policyId)
+    .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+  const latestLoan = loansForPolicy[0];
+
+  const formatCurrency = (amount: number) =>
+    `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
+  return {
+    data: {
+      id: policy.id,
+      status: policy.status,
+      cashValue: policy.cashValue,
+      issueDate: policy.issueDate,
+      faceAmount: policy.faceAmount,
+      policyType: policy.policyType,
+      policyNumber: policy.policyNumber,
+      effectiveDate: policy.effectiveDate,
+      policyholders: expandedPolicyholders.map(ph => ({
+        id: ph.id,
+        email: ph.email,
+        phone: ph.phone,
+        address: ph.address,
+        lastName: ph.lastName,
+        firstName: ph.firstName
+      }))
+    },
+    carrier: carrierProfile,
+    signatory: signatoryProfile,
+    loanApproval: latestLoan ? {
+      amount: formatCurrency(latestLoan.approvedAmount),
+      cashValue: formatCurrency(latestLoan.cashValueReviewed),
+      requestDate: formatDate(latestLoan.requestDate),
+      interestRate: `${latestLoan.annualInterestRate.toFixed(2)}%`,
+      effectiveDate: formatDate(latestLoan.effectiveDate),
+      approvalNumber: latestLoan.approvalNumber,
+      interestMethod: latestLoan.interestMethod,
+      repaymentTerms: latestLoan.repaymentTerms,
+      nextStepMessage: latestLoan.nextStepMessage,
+      disbursementMethod: latestLoan.disbursementMethod,
+      disbursementTiming: latestLoan.disbursementTiming
+    } : null,
+    correspondence: {
+      // "Today" should reflect the server's local date, not a UTC-shifted one.
+      letterDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    }
+  };
 };
 
 // Mock cash value data for policies with cash value

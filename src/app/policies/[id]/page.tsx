@@ -13,8 +13,8 @@ import {
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { policyBreakdowns } from '@/lib/data/mock-data';
-import { fetchPolicy, fetchPolicyHolders, fetchBeneficiaries } from '@/lib/services/apiClient';
-import { Policy, PolicyHolder, Beneficiary } from '@/lib/types';
+import { fetchPolicy, fetchPolicyHolders, fetchBeneficiaries, fetchPolicyLoans } from '@/lib/services/apiClient';
+import { Policy, PolicyHolder, Beneficiary, PolicyLoan } from '@/lib/types';
 
 export default function PolicyDetail() {
   const { id } = useParams();
@@ -23,6 +23,7 @@ export default function PolicyDetail() {
   const [policy, setPolicy] = useState<Policy | null | undefined>(undefined);
   const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
   const [policyBeneficiaries, setPolicyBeneficiaries] = useState<Beneficiary[]>([]);
+  const [policyLoans, setPolicyLoans] = useState<PolicyLoan[]>([]);
 
   useEffect(() => {
     if (!policyId) return;
@@ -33,12 +34,14 @@ export default function PolicyDetail() {
         setPolicy(policyData);
 
         if (policyData) {
-          const [holdersData, beneficiariesData] = await Promise.all([
+          const [holdersData, beneficiariesData, loansData] = await Promise.all([
             fetchPolicyHolders(),
             fetchBeneficiaries(policyData.id),
+            fetchPolicyLoans(policyData.id),
           ]);
           setPolicyHolders(holdersData);
           setPolicyBeneficiaries(beneficiariesData);
+          setPolicyLoans(loansData);
         }
       } catch (error) {
         console.error('Error loading policy:', error);
@@ -113,6 +116,7 @@ export default function PolicyDetail() {
     { name: 'Overview', href: '#overview', current: true },
     { name: 'Riders', href: '#riders', current: false },
     { name: 'Beneficiaries', href: '#beneficiaries', current: false },
+    { name: 'Loans', href: '#loans', current: false },
     { name: 'Documents', href: '#documents', current: false },
     { name: 'History', href: '#history', current: false },
   ];
@@ -399,6 +403,58 @@ export default function PolicyDetail() {
             ) : (
               <div className="px-4 py-5 sm:px-6">
                 <p className="text-sm text-gray-700">No beneficiaries assigned to this policy.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Loans */}
+        <div id="loans" className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6 flex justify-between">
+            <div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Policy Loans</h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-700">Loans taken against this policy&apos;s cash value.</p>
+            </div>
+            <Link href={`/policy-loans/new?policyId=${policy.id}`} className="text-indigo-600 hover:text-indigo-900">
+              New Loan Request
+            </Link>
+          </div>
+          <div className="border-t border-gray-200">
+            {policyLoans.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {policyLoans.map((loan) => (
+                  <li key={loan.id} className="px-4 py-4 sm:px-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          Approval {loan.approvalNumber}
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          Requested {formatCurrency(loan.requestedAmount)} • Approved {formatCurrency(loan.approvedAmount)}
+                        </div>
+                        <div className="mt-1 flex items-center text-xs text-gray-700">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full mr-2 ${
+                            loan.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                            loan.status === 'Partially Approved' ? 'bg-yellow-100 text-yellow-800' :
+                            loan.status === 'Disbursed' ? 'bg-blue-100 text-blue-800' :
+                            loan.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {loan.status}
+                          </span>
+                          <span>Effective: {formatDate(loan.effectiveDate)}</span>
+                        </div>
+                      </div>
+                      <Link href={`/policy-loans/${loan.id}`} className="text-indigo-600 hover:text-indigo-900">
+                        View
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-4 py-5 sm:px-6">
+                <p className="text-sm text-gray-700">No loans have been requested against this policy.</p>
               </div>
             )}
           </div>
