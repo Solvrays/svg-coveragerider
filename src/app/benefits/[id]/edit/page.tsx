@@ -2,15 +2,19 @@
 import BenefitEditClient from './BenefitEditClient';
 import { Metadata } from 'next';
 
+type RouteParams = { params: Promise<{ id: string }> };
+
 // Define the generateMetadata function for SEO
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: RouteParams): Promise<Metadata> {
+  const { id } = await params;
   return {
-    title: `Edit Benefit ${params.id} | SVG Policy Admin`,
-    description: `Edit details for benefit ${params.id}`,
+    title: `Edit Benefit ${id} | SVG Policy Admin`,
+    description: `Edit details for benefit ${id}`,
   };
 }
 
-export default function BenefitEditPage({ params }: { params: { id: string } }) {
+export default async function BenefitEditPage({ params }: RouteParams) {
+  const { id } = await params;
   // Pass the ID directly to the client component
-  return <BenefitEditClient id={params.id} />;
+  return <BenefitEditClient id={id} />;
 }

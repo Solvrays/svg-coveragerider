@@ -2,15 +2,19 @@
 import PolicyholderEditClient from './PolicyholderEditClient';
 import { Metadata } from 'next';
 
+type RouteParams = { params: Promise<{ id: string }> };
+
 // Define the generateMetadata function for SEO
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: RouteParams): Promise<Metadata> {
+  const { id } = await params;
   return {
-    title: `Edit Policyholder ${params.id} | SVG Policy Admin`,
-    description: `Edit details for policyholder ${params.id}`,
+    title: `Edit Policyholder ${id} | SVG Policy Admin`,
+    description: `Edit details for policyholder ${id}`,
   };
 }
 
-export default function EditPolicyholderPage({ params }: { params: { id: string } }) {
+export default async function EditPolicyholderPage({ params }: RouteParams) {
+  const { id } = await params;
   // Pass the ID directly to the client component
-  return <PolicyholderEditClient id={params.id} />;
+  return <PolicyholderEditClient id={id} />;
 }

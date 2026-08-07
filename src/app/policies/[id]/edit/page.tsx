@@ -2,15 +2,19 @@
 import PolicyEditClient from './PolicyEditClient';
 import { Metadata } from 'next';
 
+type RouteParams = { params: Promise<{ id: string }> };
+
 // Define the generateMetadata function for SEO
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: RouteParams): Promise<Metadata> {
+  const { id } = await params;
   return {
-    title: `Edit Policy ${params.id} | Solvrays Policy Admin`,
-    description: `Edit details for policy ${params.id}`,
+    title: `Edit Policy ${id} | Solvrays Policy Admin`,
+    description: `Edit details for policy ${id}`,
   };
 }
 
-export default function EditPolicyPage({ params }: { params: { id: string } }) {
+export default async function EditPolicyPage({ params }: RouteParams) {
+  const { id } = await params;
   // Pass the ID directly to the client component
-  return <PolicyEditClient id={params.id} />;
+  return <PolicyEditClient id={id} />;
 }
