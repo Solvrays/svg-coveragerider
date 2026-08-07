@@ -118,6 +118,10 @@ export async function updateBeneficiary(id: string, payload: Partial<Beneficiary
   return data;
 }
 
+export async function deleteBeneficiary(id: string): Promise<void> {
+  await request<{ success: boolean }>(`/beneficiaries/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 // ── Benefits ────────────────────────────────────────────────────────────────
 
 export async function fetchBenefits(policyId?: string): Promise<Benefit[]> {

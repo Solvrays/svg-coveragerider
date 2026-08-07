@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { fetchBeneficiary, fetchPolicies, createBeneficiary, updateBeneficiary } from '@/lib/services/apiClient';
-import { Address, Policy } from '@/lib/types';
+import { Address, BeneficiaryType, Policy } from '@/lib/types';
 
 // Define the BeneficiaryFormData interface
 interface BeneficiaryFormData {
@@ -22,6 +22,8 @@ interface BeneficiaryFormData {
   phone: string;
   percentage: number;
   address: Address;
+  beneficiaryType: BeneficiaryType;
+  perStirpes: boolean;
 }
 
 export default function EditBeneficiary() {
@@ -45,7 +47,9 @@ export default function EditBeneficiary() {
       state: '',
       zipCode: '',
       country: 'USA'
-    }
+    },
+    beneficiaryType: 'Primary',
+    perStirpes: false
   });
   
   const [selectedPolicyId, setSelectedPolicyId] = useState<string>('');
@@ -83,7 +87,9 @@ export default function EditBeneficiary() {
                 state: '',
                 zipCode: '',
                 country: 'USA'
-              }
+              },
+              beneficiaryType: beneficiary.beneficiaryType || 'Primary',
+              perStirpes: beneficiary.perStirpes || false
             });
             setSelectedPolicyId(beneficiary.policyId);
           } else {
@@ -139,6 +145,11 @@ export default function EditBeneficiary() {
       setFormData(prev => ({
         ...prev,
         percentage: parseInt(value) || 0
+      }));
+    } else if (name === 'perStirpes') {
+      setFormData(prev => ({
+        ...prev,
+        perStirpes: (e.target as HTMLInputElement).checked
       }));
     } else {
       setFormData(prev => ({
@@ -369,6 +380,40 @@ export default function EditBeneficiary() {
                       {errors.percentage}
                     </p>
                   )}
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label htmlFor="beneficiaryType" className="block text-sm font-medium text-gray-700">
+                    Beneficiary Type
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      id="beneficiaryType"
+                      name="beneficiaryType"
+                      value={formData.beneficiaryType}
+                      onChange={handleInputChange}
+                      className="block w-full rounded-md sm:text-sm border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="Primary">Primary</option>
+                      <option value="Contingent">Contingent</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-3 flex items-end">
+                  <label htmlFor="perStirpes" className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="perStirpes"
+                      name="perStirpes"
+                      checked={formData.perStirpes}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      Per Stirpes (share passes to this beneficiary&apos;s descendants if they predecease the insured)
+                    </span>
+                  </label>
                 </div>
 
                 <div className="sm:col-span-3">

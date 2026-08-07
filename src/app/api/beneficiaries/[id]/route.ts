@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBeneficiary, updateBeneficiary } from '@/lib/services/mockDataService';
+import { getBeneficiary, updateBeneficiary, deleteBeneficiary } from '@/lib/services/mockDataService';
 import { Beneficiary, FieldChange } from '@/lib/types';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -52,4 +52,26 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   return PUT(request, { params });
+}
+
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const existing = getBeneficiary(id);
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Beneficiary not found' }, { status: 404 });
+    }
+
+    const deleted = deleteBeneficiary(id);
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Failed to delete beneficiary' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: `Beneficiary ${id} deleted` });
+  } catch (error) {
+    console.error('DELETE /api/beneficiaries/[id] failed:', error);
+    return NextResponse.json({ error: 'Failed to delete beneficiary' }, { status: 500 });
+  }
 }

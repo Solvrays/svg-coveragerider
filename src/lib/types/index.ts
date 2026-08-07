@@ -32,6 +32,8 @@ export interface Address {
   country: string;
 }
 
+export type BeneficiaryType = 'Primary' | 'Contingent';
+
 export interface Beneficiary {
   id: string;
   firstName: string;
@@ -44,6 +46,8 @@ export interface Beneficiary {
   address?: Address;
   percentage: number;
   policyId: string;
+  beneficiaryType?: BeneficiaryType;
+  perStirpes?: boolean;
   auditTrail?: AuditEntry[];
 }
 
@@ -236,6 +240,8 @@ export interface BeneficiaryFormData {
   phone?: string;
   percentage: number;
   address?: Address;
+  beneficiaryType?: BeneficiaryType;
+  perStirpes?: boolean;
 }
 
 // Cash Value related types

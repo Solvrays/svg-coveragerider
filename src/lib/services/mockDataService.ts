@@ -319,6 +319,31 @@ export const createBeneficiary = (newBeneficiary: Omit<Beneficiary, 'id'>) => {
   return beneficiary;
 };
 
+export const deleteBeneficiary = (id: string): boolean => {
+  const index = beneficiaries.findIndex(b => b.id === id);
+  if (index === -1) return false;
+
+  const [removed] = beneficiaries.splice(index, 1);
+
+  // Keep the owning policy's beneficiaryIds list in sync
+  policies = policies.map(p =>
+    p.id === removed.policyId
+      ? { ...p, beneficiaryIds: (p.beneficiaryIds || []).filter(bId => bId !== id) }
+      : p
+  );
+
+  const auditEntry = createAuditEntry(
+    'delete',
+    'beneficiary',
+    id,
+    undefined,
+    `Beneficiary deleted on ${new Date().toLocaleString()}`
+  );
+  auditEntries.push(auditEntry);
+
+  return true;
+};
+
 // Audit trail methods
 export const getAuditEntries = () => {
   return [...auditEntries];
