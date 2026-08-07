@@ -12,7 +12,6 @@ import {
   CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { policyBreakdowns } from '@/lib/data/mock-data';
 import { fetchPolicy, fetchPolicyHolders, fetchBeneficiaries, fetchPolicyLoans } from '@/lib/services/apiClient';
 import { Policy, PolicyHolder, Beneficiary, PolicyLoan } from '@/lib/types';
 
@@ -85,7 +84,6 @@ export default function PolicyDetail() {
 
   // Get policyholders assigned to this policy
   const policyholders = policy.policyholderIds?.map(phId => policyHolders.find(ph => ph.id === phId)).filter(Boolean) || [];
-  const breakdown = policyBreakdowns.find(pb => pb.policyId === policy.id);
 
   // Format currency
   const formatCurrency = (amount: number) => {
