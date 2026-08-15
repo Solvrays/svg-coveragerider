@@ -1,4 +1,5 @@
 import { PolicyHolder, Policy, Beneficiary, Benefit, PolicyBreakdown, AuditEntry, PolicyLoan, CarrierProfile, Signatory } from '../types';
+import { compDemoPolicies, compDemoPolicyHolders } from './comp-demo-data';
 
 export const policyHolders: PolicyHolder[] = [
   {
@@ -279,7 +280,8 @@ export const policyHolders: PolicyHolder[] = [
         notes: 'Policyholder created'
       }
     ]
-  }
+  },
+  ...compDemoPolicyHolders,
 ];
 
 export const policies: Policy[] = [
@@ -542,7 +544,8 @@ export const policies: Policy[] = [
         notes: 'Policy application submitted for underwriting'
       }
     ]
-  }
+  },
+  ...compDemoPolicies,
 ];
 
 export const beneficiaries: Beneficiary[] = [

@@ -51,16 +51,78 @@ export interface Beneficiary {
   auditTrail?: AuditEntry[];
 }
 
-export interface Policy {
+export type PolicyType =
+  | 'Term Life'
+  | 'Whole Life'
+  | 'Universal Life'
+  | 'Variable Life'
+  | 'Annuity'
+  | 'Group Life'
+  | 'Preneed';
+
+export type PolicyStatus =
+  | 'Active'
+  | 'Pending'
+  | 'Lapsed'
+  | 'Cancelled'
+  | 'Expired'
+  | 'Paid Up'
+  | 'Free Look'
+  | 'NSF'
+  | 'Surrendered'
+  | 'Trust Refund'
+  | 'Annuitized';
+
+export type PremiumFrequency = 'Monthly' | 'Quarterly' | 'Semi-Annual' | 'Annual' | 'Single';
+
+/**
+ * Producer / compensation attributes.
+ *
+ * A policy cannot drive commission without knowing who wrote it, on what
+ * product, and how the case is split. These are optional so every existing
+ * policy record stays valid, but they are what an external compensation model
+ * (carrier Excel workbook, TPA calc engine, etc.) needs as inputs.
+ */
+export interface PolicyCompensationFields {
+  /** Writing agent as the carrier's compensation model identifies them. */
+  writingAgentId?: string;
+  writingAgentName?: string;
+  /** Product code understood by the carrier's comp model (e.g. TL20, PN-5, FIA). */
+  productCode?: string;
+  /** Line of business: Life | Preneed | Annuity. */
+  productLine?: 'Life' | 'Preneed' | 'Annuity';
+  carrier?: string;
+  /** Share of commission credited to the writing agent (0-1). */
+  agentSplit?: number;
+  /** Single premium or annuity deposit amount. */
+  depositAmount?: number;
+  /** Target premium (UL/IUL) or preneed contract amount. */
+  contractAmount?: number;
+  fundingSource?: string;
+  /** Issue state — pre-need in particular is state-regulated. */
+  state?: string;
+  /** Case/household name used on statements and letters. */
+  caseName?: string;
+  /** Date the current status took effect (drives chargeback duration). */
+  statusDate?: string;
+  /** Number of premium payments made to date. */
+  paymentMonths?: number;
+  isReplacement?: boolean;
+  replacedPolicyNumber?: string;
+  /** Funeral home the pre-need case was sold through, when applicable. */
+  funeralHomeName?: string;
+}
+
+export interface Policy extends PolicyCompensationFields {
   id: string;
   policyNumber: string;
-  policyType: 'Term Life' | 'Whole Life' | 'Universal Life' | 'Variable Life' | 'Annuity' | 'Group Life';
-  status: 'Active' | 'Pending' | 'Lapsed' | 'Cancelled' | 'Expired' | 'Paid Up';
+  policyType: PolicyType;
+  status: PolicyStatus;
   issueDate: string;
   effectiveDate: string;
   expiryDate?: string;
   premiumAmount: number;
-  premiumFrequency: 'Monthly' | 'Quarterly' | 'Semi-Annual' | 'Annual' | 'Single';
+  premiumFrequency: PremiumFrequency;
   faceAmount: number;
   cashValue?: number;
   policyholderIds: string[];
