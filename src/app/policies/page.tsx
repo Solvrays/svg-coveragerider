@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   MagnifyingGlassIcon, 
   FunnelIcon, 
@@ -9,14 +10,31 @@ import {
   ArrowDownIcon 
 } from '@heroicons/react/24/outline';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { fetchPolicies, fetchPolicyHolders } from '@/lib/services/apiClient';
-import { Policy, PolicyHolder } from '@/lib/types';
+import { fetchPolicies, fetchPolicyHolders, fetchBeneficiaries } from '@/lib/services/apiClient';
+import { Policy, PolicyHolder, Beneficiary } from '@/lib/types';
 
-export default function PoliciesPage() {
+// Loading component for Suspense fallback
+function PoliciesLoading() {
+  return (
+    <DashboardLayout>
+      <div className="py-4">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+// Main component that uses search params
+function PoliciesContent() {
+  const searchParams = useSearchParams();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [policyHolders, setPolicyHolders] = useState<PolicyHolder[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [sortField, setSortField] = useState('policyNumber');
@@ -25,12 +43,14 @@ export default function PoliciesPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [policiesData, policyHoldersData] = await Promise.all([
+        const [policiesData, policyHoldersData, beneficiariesData] = await Promise.all([
           fetchPolicies(),
           fetchPolicyHolders(),
+          fetchBeneficiaries(),
         ]);
         setPolicies(policiesData);
         setPolicyHolders(policyHoldersData);
+        setBeneficiaries(beneficiariesData);
       } catch (error) {
         console.error('Error loading policies:', error);
       } finally {
@@ -47,15 +67,27 @@ export default function PoliciesPage() {
 
   // Filter and sort policies
   const filteredPolicies = policies.filter(policy => {
+    const query = searchQuery.toLowerCase();
+
     // Get policyholder names for searching
     const policyholderNames = policy.policyholderIds?.map(id => {
       const holder = policyHolders.find(ph => ph.id === id);
       return holder ? `${holder.firstName} ${holder.lastName}`.toLowerCase() : '';
     }).join(' ') || '';
-    
-    const matchesSearch = 
-      policy.policyNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      policyholderNames.includes(searchQuery.toLowerCase());
+
+    // Get beneficiary names/relationships for this policy for searching
+    const policyBeneficiaries = beneficiaries.filter(b => b.policyId === policy.id);
+    const beneficiaryText = policyBeneficiaries.map(b =>
+      `${b.firstName} ${b.lastName} ${b.relationship}`.toLowerCase()
+    ).join(' ');
+
+    const matchesSearch =
+      !query ||
+      policy.policyNumber.toLowerCase().includes(query) ||
+      policy.policyType.toLowerCase().includes(query) ||
+      (policy.caseName ?? '').toLowerCase().includes(query) ||
+      policyholderNames.includes(query) ||
+      beneficiaryText.includes(query);
     
     const matchesStatus = filterStatus === 'All' || policy.status === filterStatus;
     const matchesType = filterType === 'All' || policy.policyType === filterType;
@@ -352,5 +384,13 @@ export default function PoliciesPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function PoliciesPage() {
+  return (
+    <Suspense fallback={<PoliciesLoading />}>
+      <PoliciesContent />
+    </Suspense>
   );
 }

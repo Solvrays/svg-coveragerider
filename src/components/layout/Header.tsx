@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { MagnifyingGlassIcon, BellIcon } from '@heroicons/react/24/outline';
 import { Bars3Icon } from '@heroicons/react/24/solid';
 
@@ -10,6 +11,18 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+
+  const runSearch = () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    router.push(`/policies?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    runSearch();
+  };
 
   return (
     <header className="bg-white shadow-sm z-10 border-b-2 border-black">
@@ -24,14 +37,19 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </button>
         
         <div className="flex flex-1 justify-center px-2 lg:ml-6 lg:justify-start">
-          <div className="w-full max-w-lg lg:max-w-xs">
+          <form className="w-full max-w-lg lg:max-w-xs" onSubmit={handleSearchSubmit}>
             <label htmlFor="search" className="sr-only">
               Search
             </label>
             <div className="relative text-gray-400 focus-within:text-gray-600">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <button
+                type="button"
+                onClick={runSearch}
+                className="absolute inset-y-0 left-0 z-10 flex items-center border-0 bg-transparent p-0 pl-3 shadow-none"
+                aria-label="Search"
+              >
                 <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
-              </div>
+              </button>
               <input
                 id="search"
                 className="block w-full border-2 border-black py-1.5 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:border-retro-primary sm:text-sm sm:leading-6"
@@ -41,7 +59,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
+          </form>
         </div>
         
         <div className="flex items-center">
