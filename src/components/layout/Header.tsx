@@ -42,14 +42,16 @@ export default function Header({ onMenuToggle }: HeaderProps) {
               Search
             </label>
             <div className="relative text-gray-400 focus-within:text-gray-600">
-              <button
-                type="button"
-                onClick={runSearch}
-                className="absolute inset-y-0 left-0 z-10 flex items-center border-0 bg-transparent p-0 pl-3 shadow-none"
-                aria-label="Search"
-              >
-                <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
+              {!searchQuery && (
+                <button
+                  type="button"
+                  onClick={runSearch}
+                  className="absolute inset-y-0 left-0 z-10 flex items-center border-0 bg-transparent p-0 pl-3 shadow-none"
+                  aria-label="Search"
+                >
+                  <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
               <input
                 id="search"
                 className="block w-full border-2 border-black py-1.5 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:border-retro-primary sm:text-sm sm:leading-6"
